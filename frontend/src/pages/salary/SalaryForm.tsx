@@ -150,10 +150,12 @@ export default function SalaryForm() {
   };
 
   const onSubmit = async (data: SalaryFormData) => {
-    const payload = {
+    const payload: Partial<Salary> = {
       ...data,
+      salary_type: data.salary_type as Salary['salary_type'],
+      payment_status: data.payment_status as Salary['payment_status'],
       paid_date: data.paid_date || null,
-      remarks: data.remarks || null,
+      remarks: data.remarks || undefined,
     };
     try {
       if (isEdit && id) {

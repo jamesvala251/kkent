@@ -144,7 +144,7 @@ export default function RoleForm() {
       <PageHeader
         title={isEdit ? 'Edit Role' : 'Create Role'}
         breadcrumbs={[
-          { label: 'Roles & Permissions', path: '/roles' },
+          { label: 'Roles & Permissions', to: '/roles' },
           { label: isEdit ? 'Edit' : 'Create' },
         ]}
       />

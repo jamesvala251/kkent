@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { store } from './store';
 import { useAppSelector } from './hooks/redux';
 import { createAppTheme } from './theme/theme';
+import AuthBootstrap from './components/auth/AuthBootstrap';
 import AppRoutes from './routes';
 
 function ThemedApp() {
@@ -17,7 +18,9 @@ function ThemedApp() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <AppRoutes />
+        <AuthBootstrap>
+          <AppRoutes />
+        </AuthBootstrap>
       </BrowserRouter>
       <ToastContainer position="top-right" autoClose={3000} theme={darkMode ? 'dark' : 'light'} />
     </ThemeProvider>

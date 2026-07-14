@@ -14,7 +14,6 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
@@ -141,7 +140,8 @@ export default function DieselManagement() {
       setMachines(machinesList);
       setTrips(tripsList);
       setAvailablePurchases(Array.isArray(availableRes.data) ? availableRes.data : []);
-      setDefaultRate(Number(settingsRes.data?.diesel_default_price) || 0);
+      const settingsData = settingsRes.data as { diesel_default_price?: number };
+      setDefaultRate(Number(settingsData.diesel_default_price) || 0);
     } catch {
       toast.error('Failed to load diesel data');
     }

@@ -22,6 +22,14 @@ api.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error),
 );
 
+function isAuthFormRequest(url?: string): boolean {
+  if (!url) {
+    return false;
+  }
+
+  return /\/auth\/(login|forgot-password|reset-password)/.test(url);
+}
+
 api.interceptors.response.use(
   (response) => {
     const body = response.data;
@@ -33,13 +41,18 @@ api.interceptors.response.use(
   (error: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
     const status = error.response?.status;
     const message = error.response?.data?.message || error.message || 'Something went wrong';
+    const requestUrl = error.config?.url;
 
     if (status === 401) {
       store.dispatch(logout());
-      if (!window.location.pathname.startsWith('/auth')) {
-        window.location.href = '/auth/login';
-      }
-    } else if (status === 422 && error.response?.data?.errors) {
+      return Promise.reject(error);
+    }
+
+    if (isAuthFormRequest(requestUrl)) {
+      return Promise.reject(error);
+    }
+
+    if (status === 422 && error.response?.data?.errors) {
       const errors = error.response.data.errors;
       const firstError = Object.values(errors)[0]?.[0];
       toast.error(firstError || message);

@@ -20,7 +20,7 @@ export default function FilterPanel({ children, onApply, onClear, loading }: Fil
       <CardContent sx={{ pb: '16px !important' }}>
         <Grid container spacing={2} alignItems="center">
           {children}
-          <FilterField size={{ xs: 12, sm: 6, md: 'auto' }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Button variant="contained" size="small" startIcon={<FilterListIcon />} onClick={onApply} disabled={loading}>
                 Apply
@@ -29,7 +29,7 @@ export default function FilterPanel({ children, onApply, onClear, loading }: Fil
                 Clear
               </Button>
             </Box>
-          </FilterField>
+          </Grid>
         </Grid>
       </CardContent>
     </Card>

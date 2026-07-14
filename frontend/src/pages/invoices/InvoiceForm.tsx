@@ -172,7 +172,7 @@ export default function InvoiceForm() {
   };
 
   const onSubmit = async (data: InvoiceFormData) => {
-    const payload = {
+    const payload: Partial<Invoice> = {
       customer_id: data.customer_id,
       trip_id: data.trip_id ?? null,
       invoice_date: data.invoice_date,
@@ -181,9 +181,9 @@ export default function InvoiceForm() {
       cgst_rate: data.cgst_rate ?? 0,
       sgst_rate: data.sgst_rate ?? 0,
       igst_rate: data.igst_rate ?? 0,
-      payment_status: data.payment_status,
+      payment_status: data.payment_status as Invoice['payment_status'] | undefined,
       paid_amount: data.paid_amount,
-      notes: data.notes || null,
+      notes: data.notes || undefined,
     };
     try {
       if (isEdit && id) {

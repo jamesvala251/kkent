@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, CircularProgress, InputAdornment, Link, TextField } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
+import HomeIcon from '@mui/icons-material/Home';
 import LockIcon from '@mui/icons-material/Lock';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -103,6 +104,18 @@ export default function Login() {
 
         <Button type="submit" variant="contained" fullWidth size="large" disabled={isSubmitting} sx={{ mt: 3, py: 1.25 }}>
           {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+        </Button>
+
+        <Button
+          component={RouterLink}
+          to="/"
+          variant="outlined"
+          fullWidth
+          size="large"
+          startIcon={<HomeIcon />}
+          sx={{ mt: 1.5, py: 1.1 }}
+        >
+          Back to home page
         </Button>
       </Box>
     </AuthLayout>

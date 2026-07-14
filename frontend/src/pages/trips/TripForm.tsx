@@ -211,7 +211,8 @@ export default function TripForm() {
       setTrucks(t);
       setDrivers(d);
       setMachines(h);
-      const dieselPrice = Number(settingsRes.data?.diesel_default_price) || 0;
+      const settingsData = settingsRes.data as { diesel_default_price?: number };
+      const dieselPrice = Number(settingsData.diesel_default_price) || 0;
       setDefaultDieselRate(dieselPrice);
       if (!isEdit && dieselPrice > 0) {
         setValue('diesel_rate', dieselPrice);
@@ -269,10 +270,10 @@ export default function TripForm() {
   };
 
   const onSubmit = async (data: TripFormData) => {
-    const payload = {
+    const payload: Partial<Trip> = {
       ...data,
-      hitachi_id: data.hitachi_id ?? null,
-      end_date: data.end_date || null,
+      hitachi_id: data.hitachi_id ?? undefined,
+      end_date: data.end_date || undefined,
     };
     try {
       if (isEdit && id) {

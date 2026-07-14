@@ -137,14 +137,14 @@ export default function ExpenseForm() {
     toast.error(firstError?.message ? String(firstError.message) : 'Please fill all required fields');
   };
 
-  const buildPayload = (data: ExpenseFormData) => ({
+  const buildPayload = (data: ExpenseFormData): Partial<Expense> => ({
     expense_date: data.expense_date,
     category_id: data.category_id,
     amount: data.amount,
-    description: data.description || null,
-    truck_id: data.truck_id ?? null,
-    driver_id: data.driver_id ?? null,
-    trip_id: data.trip_id ?? null,
+    description: data.description || undefined,
+    truck_id: data.truck_id ?? undefined,
+    driver_id: data.driver_id ?? undefined,
+    trip_id: data.trip_id ?? undefined,
   });
 
   const buildFormData = (data: ExpenseFormData) => {
@@ -290,7 +290,7 @@ export default function ExpenseForm() {
                   slotProps={{ inputLabel: { shrink: true } }}
                   inputProps={{ accept: 'image/*,.pdf' }}
                   onChange={(event) => {
-                    const file = event.target.files?.[0] ?? null;
+                    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
                     setBillFile(file);
                   }}
                 />
