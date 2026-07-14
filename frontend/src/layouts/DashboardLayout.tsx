@@ -3,7 +3,6 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   Breadcrumbs,
   Divider,
@@ -39,7 +38,6 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
@@ -211,17 +209,27 @@ export default function DashboardLayout() {
         variant={isMobile ? 'temporary' : 'permanent'}
         open={isMobile ? sidebarOpen : true}
         onClose={() => dispatch(setSidebarOpen(false))}
+        ModalProps={{ keepMounted: true }}
         sx={{
-          width: drawerWidth,
+          width: isMobile ? 0 : drawerWidth,
           flexShrink: 0,
-          transition: drawerTransition,
+          transition: isMobile ? undefined : drawerTransition,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
             overflowX: 'hidden',
-            transition: drawerTransition,
-            position: 'relative',
-            height: '100vh',
+            transition: isMobile ? undefined : drawerTransition,
+            // Permanent sidebar stays in-flow; temporary (mobile) must be fixed overlay
+            ...(isMobile
+              ? {
+                  position: 'fixed',
+                  height: '100%',
+                  zIndex: (t) => t.zIndex.drawer + 2,
+                }
+              : {
+                  position: 'relative',
+                  height: '100vh',
+                }),
           },
         }}
       >
@@ -281,12 +289,6 @@ export default function DashboardLayout() {
                 {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
               </IconButton>
             </Tooltip>
-
-            <IconButton>
-              <Badge badgeContent={3} color="error">
-                <NotificationsNoneIcon />
-              </Badge>
-            </IconButton>
 
             <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
               <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 14 }}>
