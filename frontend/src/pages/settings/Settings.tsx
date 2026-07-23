@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Card, CardContent, Divider, Switch, TextField, Typography, FormControlLabel } from '@mui/material';
+import { Box, Button, Card, CardContent, Divider, InputAdornment, Switch, TextField, Typography, FormControlLabel } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import PageHeader from '../../components/common/PageHeader';
@@ -17,6 +17,7 @@ interface CompanySettings {
   email: string;
   invoice_prefix: string;
   trip_prefix: string;
+  diesel_default_price: number | string;
 }
 
 const defaultSettings: CompanySettings = {
@@ -27,6 +28,7 @@ const defaultSettings: CompanySettings = {
   email: '',
   invoice_prefix: 'INV',
   trip_prefix: 'TRP',
+  diesel_default_price: 97,
 };
 
 export default function Settings() {
@@ -36,7 +38,13 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.get<CompanySettings>('/settings').then(({ data }) => setSettings(data)).catch(() => setSettings(defaultSettings));
+    api.get<CompanySettings>('/settings').then(({ data }) => {
+      setSettings({
+        ...defaultSettings,
+        ...data,
+        diesel_default_price: data.diesel_default_price != null ? Number(data.diesel_default_price) : 97,
+      });
+    }).catch(() => setSettings(defaultSettings));
   }, []);
 
   const handleChange = (field: keyof CompanySettings, value: string) => {
@@ -46,10 +54,19 @@ export default function Settings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings', settings);
+      const payload = {
+        ...settings,
+        diesel_default_price: Number(settings.diesel_default_price) || 0,
+      };
+      const { data } = await api.put<CompanySettings>('/settings', payload);
+      setSettings({
+        ...defaultSettings,
+        ...data,
+        diesel_default_price: data.diesel_default_price != null ? Number(data.diesel_default_price) : payload.diesel_default_price,
+      });
       toast.success('Settings saved');
     } catch {
-      toast.info('Settings saved locally (API pending)');
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -106,6 +123,31 @@ export default function Settings() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField label="Trip Prefix" fullWidth value={settings.trip_prefix} onChange={(e) => handleChange('trip_prefix', e.target.value)} />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="h6" sx={{ fontWeight: 600 }} gutterBottom>
+                Diesel Defaults
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Used as the default rate on new trips and diesel issue/purchase forms.
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Default Diesel Price (₹/L)"
+                    type="number"
+                    fullWidth
+                    value={settings.diesel_default_price}
+                    onChange={(e) => handleChange('diesel_default_price', e.target.value)}
+                    inputProps={{ min: 0, step: 0.01 }}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                    }}
+                    helperText="Example: 97"
+                  />
                 </Grid>
               </Grid>
 

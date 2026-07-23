@@ -13,7 +13,7 @@ class Invoice extends Model
     use HasAuditColumns, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'invoice_number', 'customer_id', 'trip_id', 'invoice_date', 'due_date',
+        'invoice_number', 'customer_id', 'trip_id', 'hitachi_rental_id', 'invoice_date', 'due_date',
         'subtotal', 'cgst_rate', 'sgst_rate', 'igst_rate', 'cgst', 'sgst', 'igst',
         'total_amount', 'payment_status', 'paid_amount', 'notes',
         'created_by', 'updated_by', 'deleted_by',
@@ -44,5 +44,10 @@ class Invoice extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function hitachiRental(): BelongsTo
+    {
+        return $this->belongsTo(HitachiRental::class, 'hitachi_rental_id');
     }
 }

@@ -79,6 +79,16 @@ export default function InvoiceList() {
   const columns: Column<Invoice>[] = [
     { id: 'invoice_number', label: 'Invoice #', minWidth: 130 },
     { id: 'customer', label: 'Customer', format: (r) => r.customer?.name || `Customer #${r.customer_id}` },
+    {
+      id: 'source',
+      label: 'Source',
+      format: (r) =>
+        r.hitachi_rental?.rental_number
+          ? `Hitachi ${r.hitachi_rental.rental_number}`
+          : r.trip?.trip_number
+            ? `Trip ${r.trip.trip_number}`
+            : '-',
+    },
     { id: 'invoice_date', label: 'Date', format: (r) => formatDate(r.invoice_date) },
     { id: 'due_date', label: 'Due Date', format: (r) => formatDate(r.due_date || '') },
     { id: 'subtotal', label: 'Subtotal', align: 'right', format: (r) => formatCurrency(Number(r.subtotal)) },

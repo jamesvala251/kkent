@@ -257,6 +257,7 @@ export interface Invoice {
   invoice_number: string;
   customer_id: number;
   trip_id?: number | null;
+  hitachi_rental_id?: number | null;
   invoice_date: string;
   due_date?: string | null;
   subtotal: number;
@@ -272,6 +273,7 @@ export interface Invoice {
   notes?: string;
   customer?: Customer;
   trip?: Trip;
+  hitachi_rental?: HitachiRental;
 }
 
 export interface DashboardStats {

@@ -18,6 +18,7 @@ import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -330,6 +331,14 @@ export default function HitachiManagement() {
       align: 'right',
       format: (row) => (
         <>
+          <IconButton
+            size="small"
+            color="primary"
+            title="Create invoice"
+            onClick={() => navigate(`/invoices/new?hitachi_rental_id=${row.id}`)}
+          >
+            <RequestQuoteIcon fontSize="small" />
+          </IconButton>
           <IconButton size="small" onClick={() => openRentalDialog(row)}>
             <EditIcon fontSize="small" />
           </IconButton>

@@ -69,7 +69,7 @@ class DatabaseSeeder extends Seeder
             'gst_number' => '24BQCPV9444A1ZU',
             'invoice_prefix' => 'INV',
             'trip_prefix' => 'TRP',
-            'diesel_default_price' => 92.50,
+            'diesel_default_price' => 97,
         ]);
     }
 

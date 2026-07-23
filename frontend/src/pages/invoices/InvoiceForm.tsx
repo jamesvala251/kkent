@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Box, Button, Card, CardContent, Divider, MenuItem, TextField, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
@@ -15,7 +15,7 @@ import InvoiceLetterhead from '../../components/common/InvoiceLetterhead';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
 import api from '../../services/api';
 import { createItem, downloadInvoicePdf, fetchList, fetchOne, formatCurrency, updateItem } from '../../services/resourceService';
-import type { Customer, Invoice, Trip } from '../../types';
+import type { Customer, HitachiRental, Invoice, Trip } from '../../types';
 
 const toNumber = (value: unknown, fallback?: number) => {
   if (value === '' || value === null || value === undefined) return fallback;
@@ -28,9 +28,17 @@ const requiredId = (label: string) =>
 
 const optionalNumber = () => yup.number().transform((_v, o) => toNumber(o, 0)).optional();
 
+const optionalId = () =>
+  yup
+    .number()
+    .transform((_v, o) => (o === '' || o === null || o === undefined ? null : toNumber(o)))
+    .nullable()
+    .optional();
+
 const schema = yup.object({
   customer_id: requiredId('Customer'),
-  trip_id: yup.number().transform((_v, o) => toNumber(o)).optional().nullable(),
+  trip_id: optionalId(),
+  hitachi_rental_id: optionalId(),
   invoice_date: yup.string().required('Invoice date is required'),
   due_date: yup.string(),
   subtotal: optionalNumber(),
@@ -45,6 +53,7 @@ const schema = yup.object({
 interface InvoiceFormData {
   customer_id: number;
   trip_id?: number | null;
+  hitachi_rental_id?: number | null;
   invoice_date: string;
   due_date?: string;
   subtotal?: number;
@@ -71,14 +80,30 @@ const calcTotals = (data: Partial<InvoiceFormData>) => {
 const deriveRate = (amount: number, subtotal: number) =>
   subtotal > 0 ? Math.round((amount / subtotal) * 100 * 100) / 100 : 0;
 
+const resolveRate = (rate: number | null | undefined, amount: number | null | undefined, subtotal: number) => {
+  const storedRate = Number(rate ?? 0);
+  if (storedRate > 0) return storedRate;
+  const taxAmount = Number(amount ?? 0);
+  if (taxAmount > 0 && subtotal > 0) return deriveRate(taxAmount, subtotal);
+  return storedRate;
+};
+
+const billingLabel = (rental: HitachiRental) => {
+  if (rental.billing_type === 'hourly') return `${rental.hours ?? 0} hrs`;
+  if (rental.billing_type === 'daily') return `${rental.days ?? 0} days`;
+  return `${rental.months ?? 0} mo`;
+};
+
 export default function InvoiceForm() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id && id !== 'new');
-  const [loadingData, setLoadingData] = useState(isEdit);
+  const [loadingData, setLoadingData] = useState(isEdit || Boolean(searchParams.get('hitachi_rental_id')));
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [rentals, setRentals] = useState<HitachiRental[]>([]);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [companySettings, setCompanySettings] = useState({
     company_name: 'KK Enterprise',
@@ -92,37 +117,73 @@ export default function InvoiceForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm<InvoiceFormData>({
     resolver: yupResolver(schema) as Resolver<InvoiceFormData>,
     defaultValues: {
       invoice_date: dayjs().format('YYYY-MM-DD'),
+      due_date: dayjs().add(15, 'day').format('YYYY-MM-DD'),
       subtotal: 0,
       cgst_rate: 9,
       sgst_rate: 9,
       igst_rate: 0,
       paid_amount: 0,
       payment_status: 'pending',
+      trip_id: null,
+      hitachi_rental_id: null,
     },
   });
 
   const watched = useWatch({ control });
   const gst = useMemo(() => calcTotals(watched), [watched]);
 
+  const applyRental = (rental: HitachiRental) => {
+    setValue('hitachi_rental_id', rental.id);
+    setValue('trip_id', null);
+    setValue('customer_id', rental.customer_id);
+    setValue('subtotal', Number(rental.total_amount) || 0);
+    const noteParts = [
+      `Hitachi rental ${rental.rental_number}`,
+      rental.hitachi?.machine_number ? `Machine ${rental.hitachi.machine_number}` : null,
+      rental.site_location ? `Site: ${rental.site_location}` : null,
+    ].filter(Boolean);
+    setValue('notes', noteParts.join(' · '));
+  };
+
   useEffect(() => {
     Promise.all([
       fetchList<Customer>('/customers'),
       fetchList<Trip>('/trips', { per_page: 100 }),
+      fetchList<HitachiRental>('/hitachi/rentals', { per_page: 100 }),
       api.get<typeof companySettings>('/settings'),
-    ]).then(([c, t, settingsRes]) => {
+    ]).then(([c, t, r, settingsRes]) => {
       setCustomers(c);
       setTrips(t);
+      setRentals(r);
       if (settingsRes.data) {
         setCompanySettings((prev) => ({ ...prev, ...settingsRes.data }));
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (isEdit || !rentals.length) return;
+    const rentalId = searchParams.get('hitachi_rental_id');
+    if (!rentalId) {
+      setLoadingData(false);
+      return;
+    }
+    const rental = rentals.find((item) => item.id === Number(rentalId));
+    if (rental) {
+      applyRental(rental);
+    } else {
+      toast.error('Hitachi rental not found');
+    }
+    setLoadingData(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, rentals, searchParams]);
 
   useEffect(() => {
     if (!isEdit || !id) return;
@@ -133,19 +194,14 @@ export default function InvoiceForm() {
         setInvoiceNumber(data.invoice_number);
         reset({
           customer_id: data.customer_id,
-          trip_id: data.trip_id ?? undefined,
+          trip_id: data.trip_id ?? null,
+          hitachi_rental_id: data.hitachi_rental_id ?? null,
           invoice_date: data.invoice_date?.split('T')[0] ?? '',
           due_date: data.due_date?.split('T')[0] ?? '',
           subtotal,
-          cgst_rate: data.cgst_rate != null
-            ? Number(data.cgst_rate)
-            : deriveRate(Number(data.cgst ?? 0), subtotal),
-          sgst_rate: data.sgst_rate != null
-            ? Number(data.sgst_rate)
-            : deriveRate(Number(data.sgst ?? 0), subtotal),
-          igst_rate: data.igst_rate != null
-            ? Number(data.igst_rate)
-            : deriveRate(Number(data.igst ?? 0), subtotal),
+          cgst_rate: resolveRate(data.cgst_rate, data.cgst, subtotal),
+          sgst_rate: resolveRate(data.sgst_rate, data.sgst, subtotal),
+          igst_rate: resolveRate(data.igst_rate, data.igst, subtotal),
           payment_status: data.payment_status,
           paid_amount: Number(data.paid_amount ?? 0),
           notes: data.notes ?? '',
@@ -174,7 +230,8 @@ export default function InvoiceForm() {
   const onSubmit = async (data: InvoiceFormData) => {
     const payload: Partial<Invoice> = {
       customer_id: data.customer_id,
-      trip_id: data.trip_id ?? null,
+      trip_id: data.hitachi_rental_id ? null : (data.trip_id ?? null),
+      hitachi_rental_id: data.hitachi_rental_id ?? null,
       invoice_date: data.invoice_date,
       due_date: data.due_date || null,
       subtotal: data.subtotal,
@@ -207,7 +264,7 @@ export default function InvoiceForm() {
     <Box>
       <PageHeader
         title={isEdit ? 'Edit Invoice' : 'Create Invoice'}
-        subtitle="Enter GST as % — amounts are calculated automatically"
+        subtitle="Link a trip or Hitachi rental — GST % calculates tax automatically"
         breadcrumbs={[{ label: 'Invoices', to: '/invoices' }, { label: isEdit ? 'Edit' : 'New' }]}
         action={
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -264,14 +321,51 @@ export default function InvoiceForm() {
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField {...register('trip_id')} label="Trip (Optional)" select fullWidth>
+                <TextField
+                  select
+                  fullWidth
+                  label="Hitachi Rental (Optional)"
+                  value={watched.hitachi_rental_id ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      setValue('hitachi_rental_id', null);
+                      return;
+                    }
+                    const rental = rentals.find((item) => item.id === Number(value));
+                    if (rental) applyRental(rental);
+                  }}
+                  helperText="Selecting a rental fills customer & subtotal"
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {rentals.map((r) => (
+                    <MenuItem key={r.id} value={r.id}>
+                      {r.rental_number} · {r.hitachi?.machine_number ?? 'Machine'} · {r.customer?.name ?? 'Customer'} · {billingLabel(r)} · {formatCurrency(Number(r.total_amount))}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Trip (Optional)"
+                  value={watched.trip_id ?? ''}
+                  disabled={Boolean(watched.hitachi_rental_id)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setValue('trip_id', value ? Number(value) : null);
+                    if (value) setValue('hitachi_rental_id', null);
+                  }}
+                  helperText={watched.hitachi_rental_id ? 'Clear Hitachi rental to link a trip' : ' '}
+                >
                   <MenuItem value="">None</MenuItem>
                   {trips.map((t) => (
                     <MenuItem key={t.id} value={t.id}>{t.trip_number}</MenuItem>
                   ))}
                 </TextField>
               </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
                   {...register('invoice_date')}
                   label="Invoice Date"
@@ -281,7 +375,7 @@ export default function InvoiceForm() {
                   error={!!errors.invoice_date}
                 />
               </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField {...register('due_date')} label="Due Date" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
               </Grid>
               {isEdit && (
@@ -310,7 +404,9 @@ export default function InvoiceForm() {
                   label="CGST (%)"
                   type="number"
                   fullWidth
-                  helperText={`Amount: ${formatCurrency(gst.cgst)}`}
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
+                  helperText={`Tax amount: ${formatCurrency(gst.cgst)}`}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
@@ -319,7 +415,9 @@ export default function InvoiceForm() {
                   label="SGST (%)"
                   type="number"
                   fullWidth
-                  helperText={`Amount: ${formatCurrency(gst.sgst)}`}
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
+                  helperText={`Tax amount: ${formatCurrency(gst.sgst)}`}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
@@ -328,7 +426,9 @@ export default function InvoiceForm() {
                   label="IGST (%)"
                   type="number"
                   fullWidth
-                  helperText={`Amount: ${formatCurrency(gst.igst)} — use for inter-state`}
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
+                  helperText={`Tax amount: ${formatCurrency(gst.igst)} — use for inter-state`}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
