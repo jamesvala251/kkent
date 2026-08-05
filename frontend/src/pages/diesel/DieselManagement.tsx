@@ -752,7 +752,7 @@ export default function DieselManagement() {
       <ConfirmDialog
         open={!!deletePurchaseId}
         title="Delete Purchase"
-        message="Delete this diesel purchase? Linked expense will also be removed. Only allowed if no diesel was issued from it."
+        message="Delete this diesel purchase? Linked expense and any diesel OUT issues from this purchase will also be removed."
         confirmText="Delete"
         severity="error"
         loading={deleting}

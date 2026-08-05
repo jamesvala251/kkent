@@ -407,16 +407,22 @@ export default function TripForm() {
                     control={control}
                     render={({ field }) => (
                       <Autocomplete
+                        freeSolo
                         options={fromCityOptions}
-                        value={field.value || null}
-                        onChange={(_, value) => field.onChange(value ?? '')}
+                        value={field.value ?? ''}
+                        onChange={(_, value) => field.onChange(typeof value === 'string' ? value : value ?? '')}
+                        onInputChange={(_, value, reason) => {
+                          if (reason === 'input' || reason === 'clear') {
+                            field.onChange(value);
+                          }
+                        }}
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             label="From Location"
                             margin="normal"
                             error={!!errors.from_location}
-                            helperText={errors.from_location?.message || 'Select a Gujarat city'}
+                            helperText={errors.from_location?.message || 'Select from list or type a custom location'}
                           />
                         )}
                       />
@@ -429,16 +435,22 @@ export default function TripForm() {
                     control={control}
                     render={({ field }) => (
                       <Autocomplete
+                        freeSolo
                         options={toCityOptions}
-                        value={field.value || null}
-                        onChange={(_, value) => field.onChange(value ?? '')}
+                        value={field.value ?? ''}
+                        onChange={(_, value) => field.onChange(typeof value === 'string' ? value : value ?? '')}
+                        onInputChange={(_, value, reason) => {
+                          if (reason === 'input' || reason === 'clear') {
+                            field.onChange(value);
+                          }
+                        }}
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             label="To Location"
                             margin="normal"
                             error={!!errors.to_location}
-                            helperText={errors.to_location?.message || 'Select a Gujarat city'}
+                            helperText={errors.to_location?.message || 'Select from list or type a custom location'}
                           />
                         )}
                       />

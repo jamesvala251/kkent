@@ -21,7 +21,6 @@ const toNumber = (value: unknown, fallback?: number) => {
 
 const schema = yup.object({
   machine_number: yup.string().required('Machine number is required'),
-  registration_number: yup.string(),
   model: yup.string(),
   owner: yup.string(),
   engine_number: yup.string(),
@@ -39,7 +38,6 @@ const schema = yup.object({
 
 interface HitachiFormData {
   machine_number: string;
-  registration_number?: string;
   model?: string;
   owner?: string;
   engine_number?: string;
@@ -88,7 +86,6 @@ export default function HitachiForm() {
       if (data) {
         reset({
           machine_number: data.machine_number ?? '',
-          registration_number: data.registration_number ?? '',
           model: data.model ?? '',
           owner: data.owner ?? '',
           engine_number: data.engine_number ?? '',
@@ -152,9 +149,6 @@ export default function HitachiForm() {
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('machine_number')} label="Machine Number" fullWidth error={!!errors.machine_number} helperText={errors.machine_number?.message} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('registration_number')} label="Registration Number" fullWidth />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('model')} label="Model" fullWidth />
