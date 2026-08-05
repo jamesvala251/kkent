@@ -190,12 +190,32 @@ class DieselService
     public function deletePurchase(DieselPurchase $purchase): void
     {
         DB::transaction(function () use ($purchase) {
-            $issuedQty = (float) $purchase->quantity - (float) $purchase->remaining_quantity;
-            if ($issuedQty > 0) {
-                throw ValidationException::withMessages([
-                    'purchase' => ['Cannot delete purchase with diesel already issued from it.'],
-                ]);
+            // Remove OUT issues that drew from this purchase so IN rows can always be deleted.
+            $linkedIssues = DieselIssue::query()
+                ->where(function ($query) use ($purchase) {
+                    $query->where('diesel_purchase_id', $purchase->id)
+                        ->orWhereNotNull('purchase_allocations');
+                })
+                ->get()
+                ->filter(function (DieselIssue $issue) use ($purchase) {
+                    if ((int) $issue->diesel_purchase_id === (int) $purchase->id) {
+                        return true;
+                    }
+
+                    foreach ($issue->purchase_allocations ?? [] as $allocation) {
+                        if ((int) ($allocation['purchase_id'] ?? 0) === (int) $purchase->id) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                });
+
+            foreach ($linkedIssues as $issue) {
+                $this->deleteIssue($issue);
             }
+
+            $purchase->refresh();
 
             if ($purchase->expense_id) {
                 Expense::where('id', $purchase->expense_id)->delete();
