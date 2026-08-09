@@ -34,6 +34,7 @@ import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
+import DescriptionIcon from '@mui/icons-material/Description';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -60,6 +61,7 @@ const menuItems = [
   { label: 'Expenses', path: '/expenses', icon: <ReceiptLongIcon /> },
   { label: 'Salary', path: '/salary', icon: <PaymentsIcon /> },
   { label: 'Invoices', path: '/invoices', icon: <RequestQuoteIcon /> },
+  { label: 'Challan', path: '/challan', icon: <DescriptionIcon /> },
   { label: 'Reports', path: '/reports', icon: <AssessmentIcon /> },
   { label: 'Roles & Permissions', path: '/roles', icon: <AdminPanelSettingsIcon /> },
   { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },

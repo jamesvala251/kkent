@@ -23,6 +23,7 @@ import SalaryList from '../pages/salary/SalaryList';
 import SalaryForm from '../pages/salary/SalaryForm';
 import InvoiceList from '../pages/invoices/InvoiceList';
 import InvoiceForm from '../pages/invoices/InvoiceForm';
+import ChallanManagement from '../pages/challan/ChallanManagement';
 import Reports from '../pages/reports/Reports';
 import RoleList from '../pages/roles/RoleList';
 import RoleForm from '../pages/roles/RoleForm';
@@ -83,6 +84,7 @@ export default function AppRoutes() {
         <Route path="invoices" element={<InvoiceList />} />
         <Route path="invoices/new" element={<InvoiceForm />} />
         <Route path="invoices/:id/edit" element={<InvoiceForm />} />
+        <Route path="challan" element={<ChallanManagement />} />
         <Route path="reports" element={<Reports />} />
         <Route path="roles" element={<RoleList />} />
         <Route path="roles/new" element={<RoleForm />} />

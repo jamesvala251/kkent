@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChallanController;
+use App\Http\Controllers\Api\ChallanMasterController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DieselController;
@@ -75,6 +77,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('salaries', SalaryController::class);
     Route::apiResource('invoices', InvoiceController::class);
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
+
+    Route::prefix('challan')->group(function () {
+        Route::get('masters/{type}', [ChallanMasterController::class, 'index'])->whereIn('type', ['consignees', 'transporters', 'vendors', 'items']);
+        Route::post('masters/{type}', [ChallanMasterController::class, 'store'])->whereIn('type', ['consignees', 'transporters', 'vendors', 'items']);
+        Route::put('masters/{type}/{id}', [ChallanMasterController::class, 'update'])->whereIn('type', ['consignees', 'transporters', 'vendors', 'items']);
+        Route::delete('masters/{type}/{id}', [ChallanMasterController::class, 'destroy'])->whereIn('type', ['consignees', 'transporters', 'vendors', 'items']);
+
+        Route::get('next-number', [ChallanController::class, 'nextNumber']);
+        Route::get('/', [ChallanController::class, 'index']);
+        Route::post('/', [ChallanController::class, 'store']);
+        Route::get('{challan}', [ChallanController::class, 'show']);
+        Route::delete('{challan}', [ChallanController::class, 'destroy']);
+    });
+
     Route::apiResource('maintenance', MaintenanceController::class);
 
     Route::post('documents', [DocumentController::class, 'store']);
