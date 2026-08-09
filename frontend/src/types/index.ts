@@ -309,3 +309,54 @@ export interface PermissionsResponse {
   actions: PermissionAction[];
   groups: PermissionGroup[];
 }
+
+export interface ChallanParty {
+  id: number;
+  name: string;
+  gst: string;
+  address?: string;
+  contact?: string;
+}
+
+export interface ChallanItemMaster {
+  id: number;
+  name: string;
+  unit: string;
+  weight: number;
+  rate: number;
+  amount: number;
+  hsn?: string;
+}
+
+export interface ChallanLineItem {
+  id: number;
+  name: string;
+  unit: string;
+  weight: number;
+  rate: number;
+  amount: number;
+  hsn?: string;
+}
+
+export interface Challan {
+  id: number;
+  challan_no: string;
+  date: string;
+  consignee: string;
+  consignee_gst?: string;
+  consignee_address?: string;
+  transporter: string;
+  vendor: string;
+  dispatched_from: string;
+  lr_no?: string;
+  po_no?: string;
+  vehicle_no?: string;
+  e_way_bill_no?: string;
+  e_way_date?: string;
+  prepared_by?: string;
+  item_table: ChallanLineItem[];
+  subtotal?: number;
+  cgst?: number;
+  sgst?: number;
+  total?: number;
+}

@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         $this->seedCompanySettings();
         $this->seedAdminUser();
         $this->call(HitachiSampleSeeder::class);
+        $this->call(ChallanSeeder::class);
     }
 
     private function seedRolesAndPermissions(): void
@@ -26,7 +27,7 @@ class DatabaseSeeder extends Seeder
         $roles = ['Super Admin', 'Admin', 'Manager', 'Accountant', 'Operator', 'Driver'];
         $modules = [
             'customers', 'drivers', 'trucks', 'hitachi', 'trips', 'expenses', 'diesel',
-            'salaries', 'invoices', 'maintenance', 'reports', 'settings', 'roles',
+            'salaries', 'invoices', 'challans', 'maintenance', 'reports', 'settings', 'roles',
         ];
         $actions = ['view', 'create', 'edit', 'delete', 'export', 'print'];
 

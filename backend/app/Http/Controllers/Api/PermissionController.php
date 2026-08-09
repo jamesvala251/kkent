@@ -26,6 +26,7 @@ class PermissionController extends ApiController
         'diesel' => 'Diesel',
         'salaries' => 'Salary',
         'invoices' => 'Invoices',
+        'challans' => 'Challan',
         'maintenance' => 'Maintenance',
         'reports' => 'Reports',
         'settings' => 'Settings',
