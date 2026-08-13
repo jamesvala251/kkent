@@ -58,8 +58,8 @@ const schema = yup.object({
     .nullable(),
   start_date: yup.string().required('Start date is required'),
   end_date: yup.string(),
-  from_location: yup.string().required('From location is required'),
-  to_location: yup.string().required('To location is required'),
+  from_location: yup.string().default(''),
+  to_location: yup.string().default(''),
   material: yup.string(),
   weight: optionalNumber(),
   start_km: yup
@@ -151,6 +151,8 @@ export default function TripForm() {
     resolver: yupResolver(schema) as Resolver<TripFormData>,
     defaultValues: {
       start_date: dayjs().format('YYYY-MM-DD'),
+      from_location: '',
+      to_location: '',
       status: 'pending',
       compressor: false,
       diesel_qty: 0,
@@ -408,9 +410,16 @@ export default function TripForm() {
                     render={({ field }) => (
                       <Autocomplete
                         freeSolo
+                        autoSelect
                         options={fromCityOptions}
                         value={field.value ?? ''}
-                        onChange={(_, value) => field.onChange(typeof value === 'string' ? value : value ?? '')}
+                        onChange={(_, value, reason) => {
+                          if (reason === 'clear') {
+                            field.onChange('');
+                            return;
+                          }
+                          if (typeof value === 'string') field.onChange(value);
+                        }}
                         onInputChange={(_, value, reason) => {
                           if (reason === 'input' || reason === 'clear') {
                             field.onChange(value);
@@ -419,10 +428,10 @@ export default function TripForm() {
                         renderInput={(params) => (
                           <TextField
                             {...params}
-                            label="From Location"
+                            label="From Location (Optional)"
                             margin="normal"
                             error={!!errors.from_location}
-                            helperText={errors.from_location?.message || 'Select from list or type a custom location'}
+                            helperText={errors.from_location?.message || 'Optional — type any location or pick from the list'}
                           />
                         )}
                       />
@@ -436,9 +445,16 @@ export default function TripForm() {
                     render={({ field }) => (
                       <Autocomplete
                         freeSolo
+                        autoSelect
                         options={toCityOptions}
                         value={field.value ?? ''}
-                        onChange={(_, value) => field.onChange(typeof value === 'string' ? value : value ?? '')}
+                        onChange={(_, value, reason) => {
+                          if (reason === 'clear') {
+                            field.onChange('');
+                            return;
+                          }
+                          if (typeof value === 'string') field.onChange(value);
+                        }}
                         onInputChange={(_, value, reason) => {
                           if (reason === 'input' || reason === 'clear') {
                             field.onChange(value);
@@ -447,10 +463,10 @@ export default function TripForm() {
                         renderInput={(params) => (
                           <TextField
                             {...params}
-                            label="To Location"
+                            label="To Location (Optional)"
                             margin="normal"
                             error={!!errors.to_location}
-                            helperText={errors.to_location?.message || 'Select from list or type a custom location'}
+                            helperText={errors.to_location?.message || 'Optional — type any location or pick from the list'}
                           />
                         )}
                       />

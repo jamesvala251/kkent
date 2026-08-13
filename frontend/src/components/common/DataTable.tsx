@@ -8,6 +8,7 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableFooter,
   TableHead,
   TablePagination,
   TableRow,
@@ -37,6 +38,7 @@ interface DataTableProps<T extends object> {
   rowsPerPageOptions?: number[];
   defaultRowsPerPage?: number;
   getRowId?: (row: T) => string | number;
+  footer?: Partial<Record<string, React.ReactNode>>;
 }
 
 export default function DataTable<T extends object>({
@@ -51,6 +53,7 @@ export default function DataTable<T extends object>({
   rowsPerPageOptions = [5, 10, 25, 50],
   defaultRowsPerPage = 10,
   getRowId,
+  footer,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
@@ -153,6 +156,23 @@ export default function DataTable<T extends object>({
               ))
             )}
           </TableBody>
+          {footer && (
+            <TableFooter>
+              <TableRow
+                sx={{
+                  position: 'sticky',
+                  bottom: 0,
+                  '& td': { fontWeight: 700, bgcolor: 'action.hover', color: 'text.primary', fontSize: '0.95rem', borderTop: 1, borderColor: 'divider' },
+                }}
+              >
+                {columns.map((column) => (
+                  <TableCell key={column.id} align={column.align}>
+                    {footer[column.id] ?? ''}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
       </TableContainer>
 

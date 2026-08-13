@@ -27,6 +27,7 @@ const reportTypes = [
   { value: 'salary', label: 'Salary Report' },
   { value: 'invoice', label: 'Invoice Report' },
   { value: 'fleet', label: 'Fleet Utilization Report' },
+  { value: 'customer_wise', label: 'Customer Wise Report' },
 ];
 
 interface ReportColumn {
@@ -134,7 +135,7 @@ export default function Reports() {
   );
 
   const formatSummaryValue = (item: ReportSummaryItem) => {
-    const currencyKeywords = ['total', 'revenue', 'profit', 'freight', 'expense', 'billed', 'outstanding', 'salary', 'net'];
+    const currencyKeywords = ['total', 'revenue', 'profit', 'freight', 'expense', 'billed', 'outstanding', 'salary', 'net', 'paid'];
     if (typeof item.value === 'number' && currencyKeywords.some((kw) => item.label.toLowerCase().includes(kw))) {
       return formatCurrency(item.value);
     }

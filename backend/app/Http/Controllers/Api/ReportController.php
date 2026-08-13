@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends ApiController
 {
-    private const REPORT_TYPES = ['trip_summary', 'profit_loss', 'expense', 'salary', 'invoice', 'fleet'];
+    private const REPORT_TYPES = ['trip_summary', 'profit_loss', 'expense', 'salary', 'invoice', 'fleet', 'customer_wise'];
 
     public function generate(Request $request, ReportService $reportService): JsonResponse
     {
