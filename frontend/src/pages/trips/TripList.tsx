@@ -1,15 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Chip, IconButton, MenuItem, TextField } from '@mui/material';
+import { Box, Button, Chip, IconButton, MenuItem, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable, { type Column } from '../../components/common/DataTable';
 import FilterPanel, { FilterField } from '../../components/common/FilterPanel';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
+import api from '../../services/api';
 import { fetchList, formatCurrency, formatDate } from '../../services/resourceService';
 import { buildFilterParams, type FilterValues } from '../../utils/listFilters';
 import type { Customer, Driver, Trip, Truck } from '../../types';
+
+type TripSummary = {
+  total_amount: number;
+  total_expense: number;
+  total_profit: number;
+};
+
+const emptySummary: TripSummary = {
+  total_amount: 0,
+  total_expense: 0,
+  total_profit: 0,
+};
 
 const initialFilters: FilterValues = {
   status: '',
@@ -30,6 +43,7 @@ export default function TripList() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [summary, setSummary] = useState<TripSummary>(emptySummary);
 
   useEffect(() => {
     Promise.all([
@@ -45,9 +59,22 @@ export default function TripList() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchList<Trip>('/trips', buildFilterParams(appliedFilters));
-    setRows(data);
-    setLoading(false);
+    try {
+      const { data } = await api.get('/trips', { params: buildFilterParams(appliedFilters) });
+      const list: Trip[] = Array.isArray(data) ? data : (data?.data ?? []);
+      setRows(list);
+      const apiSummary = data && !Array.isArray(data) ? data.summary : undefined;
+      setSummary({
+        total_amount: Number(apiSummary?.total_amount ?? list.reduce((sum, row) => sum + Number(row.total_freight || 0), 0)),
+        total_expense: Number(apiSummary?.total_expense ?? list.reduce((sum, row) => sum + Number(row.total_expense || 0), 0)),
+        total_profit: Number(apiSummary?.total_profit ?? list.reduce((sum, row) => sum + Number(row.profit || 0), 0)),
+      });
+    } catch {
+      setRows([]);
+      setSummary(emptySummary);
+    } finally {
+      setLoading(false);
+    }
   }, [appliedFilters]);
 
   useEffect(() => {
@@ -62,7 +89,7 @@ export default function TripList() {
     { id: 'customer', label: 'Customer', format: (r) => r.customer?.name ?? '-' },
     { id: 'truck', label: 'Truck', format: (r) => r.truck?.truck_number ?? '-' },
     { id: 'total_km', label: 'KM', align: 'right' },
-    { id: 'total_freight', label: 'Total Freight', align: 'right', format: (r) => formatCurrency(r.total_freight || 0) },
+    { id: 'total_freight', label: 'Total Amount', align: 'right', format: (r) => formatCurrency(r.total_freight || 0) },
     { id: 'total_expense', label: 'Expense', align: 'right', format: (r) => formatCurrency(r.total_expense || 0) },
     { id: 'profit', label: 'Profit', align: 'right', format: (r) => formatCurrency(r.profit || 0) },
     {
@@ -200,7 +227,44 @@ export default function TripList() {
           />
         </FilterField>
       </FilterPanel>
-      <DataTable columns={columns} rows={rows} loading={loading} searchable={false} getRowId={(r) => r.id} />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        searchable={false}
+        getRowId={(r) => r.id}
+        footer={{
+          trip_number: 'Total',
+          total_freight: formatCurrency(summary.total_amount),
+          total_expense: formatCurrency(summary.total_expense),
+          profit: formatCurrency(summary.total_profit),
+        }}
+      />
+      <Box
+        sx={{
+          mt: 1.5,
+          px: 3,
+          py: 2,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: { xs: 2, md: 4 },
+          flexWrap: 'wrap',
+          bgcolor: 'background.paper',
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={700}>
+          Total Amount: {formatCurrency(summary.total_amount)}
+        </Typography>
+        <Typography variant="subtitle1" fontWeight={700} color="text.secondary">
+          Expense: {formatCurrency(summary.total_expense)}
+        </Typography>
+        <Typography variant="subtitle1" fontWeight={700} color="success.main">
+          Profit: {formatCurrency(summary.total_profit)}
+        </Typography>
+      </Box>
     </>
   );
 }

@@ -19,6 +19,11 @@ class TripService
         return $this->repository->all($filters);
     }
 
+    public function summary(array $filters = []): array
+    {
+        return $this->repository->summary($filters);
+    }
+
     public function find(int $id): Trip
     {
         return $this->repository->findOrFail($id)->load(['customer', 'truck', 'driver', 'hitachi']);
@@ -55,6 +60,9 @@ class TripService
 
     private function calculateFields(array $data): array
     {
+        $data['from_location'] = trim((string) ($data['from_location'] ?? ''));
+        $data['to_location'] = trim((string) ($data['to_location'] ?? ''));
+
         $startKm = (float) ($data['start_km'] ?? 0);
         $endKm = (float) ($data['end_km'] ?? 0);
         $data['total_km'] = max(0, $endKm - $startKm);

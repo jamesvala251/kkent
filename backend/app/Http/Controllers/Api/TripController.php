@@ -17,8 +17,10 @@ class TripController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $trips = $this->tripService->list($request->all());
+        $payload = TripResource::collection($trips)->response()->getData(true);
+        $payload['summary'] = $this->tripService->summary($request->all());
 
-        return $this->success(TripResource::collection($trips)->response()->getData(true));
+        return $this->success($payload);
     }
 
     public function nextNumber(): JsonResponse

@@ -21,6 +21,7 @@ class ReportService
             'salary' => $this->salaryReport($dateFrom, $dateTo),
             'invoice' => $this->invoiceReport($dateFrom, $dateTo),
             'fleet' => $this->fleetReport($dateFrom, $dateTo),
+            'customer_wise' => $this->customerWiseReport($dateFrom, $dateTo),
             default => throw new \InvalidArgumentException('Invalid report type'),
         };
     }
@@ -326,6 +327,77 @@ class ReportService
                 'categories' => $grouped->take(10)->pluck('truck')->all(),
                 'series' => [
                     ['name' => 'Trips', 'data' => $grouped->take(10)->pluck('trip_count')->all()],
+                ],
+            ],
+        ];
+    }
+
+    private function customerWiseReport(string $dateFrom, string $dateTo): array
+    {
+        $trips = Trip::with('customer')
+            ->whereDate('start_date', '>=', $dateFrom)
+            ->whereDate('start_date', '<=', $dateTo)
+            ->get();
+
+        $invoices = Invoice::with('customer')
+            ->whereDate('invoice_date', '>=', $dateFrom)
+            ->whereDate('invoice_date', '<=', $dateTo)
+            ->get();
+
+        $customerIds = $trips->pluck('customer_id')
+            ->merge($invoices->pluck('customer_id'))
+            ->unique()
+            ->filter()
+            ->values();
+
+        $rows = $customerIds->map(function ($customerId) use ($trips, $invoices) {
+            $customerTrips = $trips->where('customer_id', $customerId);
+            $customerInvoices = $invoices->where('customer_id', $customerId);
+            $customer = $customerTrips->first()?->customer ?? $customerInvoices->first()?->customer;
+
+            return [
+                'customer' => $customer?->name ?? "Customer #{$customerId}",
+                'mobile' => $customer?->mobile ?? '-',
+                'trip_count' => $customerTrips->count(),
+                'total_freight' => round($customerTrips->sum('total_freight'), 2),
+                'total_expense' => round($customerTrips->sum('total_expense'), 2),
+                'total_profit' => round($customerTrips->sum('profit'), 2),
+                'total_billed' => round($customerInvoices->sum('total_amount'), 2),
+                'total_paid' => round($customerInvoices->sum('paid_amount'), 2),
+                'outstanding' => round($customerInvoices->sum(fn ($i) => $i->total_amount - $i->paid_amount), 2),
+            ];
+        })->sortByDesc('total_freight')->values()->all();
+
+        $grouped = collect($rows);
+
+        return [
+            'title' => 'Customer Wise Report',
+            'type' => 'customer_wise',
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'summary' => [
+                ['label' => 'Customers', 'value' => $grouped->count()],
+                ['label' => 'Total Trips', 'value' => $trips->count()],
+                ['label' => 'Total Freight', 'value' => round($trips->sum('total_freight'), 2)],
+                ['label' => 'Total Billed', 'value' => round($invoices->sum('total_amount'), 2)],
+                ['label' => 'Outstanding', 'value' => round($invoices->sum(fn ($i) => $i->total_amount - $i->paid_amount), 2)],
+            ],
+            'columns' => [
+                ['key' => 'customer', 'label' => 'Customer'],
+                ['key' => 'mobile', 'label' => 'Mobile'],
+                ['key' => 'trip_count', 'label' => 'Trips'],
+                ['key' => 'total_freight', 'label' => 'Freight', 'format' => 'currency'],
+                ['key' => 'total_expense', 'label' => 'Expense', 'format' => 'currency'],
+                ['key' => 'total_profit', 'label' => 'Profit', 'format' => 'currency'],
+                ['key' => 'total_billed', 'label' => 'Billed', 'format' => 'currency'],
+                ['key' => 'total_paid', 'label' => 'Paid', 'format' => 'currency'],
+                ['key' => 'outstanding', 'label' => 'Outstanding', 'format' => 'currency'],
+            ],
+            'rows' => $rows,
+            'chart' => [
+                'categories' => $grouped->take(10)->pluck('customer')->all(),
+                'series' => [
+                    ['name' => 'Freight', 'data' => $grouped->take(10)->pluck('total_freight')->all()],
                 ],
             ],
         ];
