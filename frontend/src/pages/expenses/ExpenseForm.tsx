@@ -30,7 +30,7 @@ import {
   updateWithFile,
 } from '../../services/resourceService';
 import api from '../../services/api';
-import type { Driver, Expense, ExpenseCategory, Trip, Truck } from '../../types';
+import type { Driver, Expense, ExpenseCategory, HitachiRental, Trip, Truck } from '../../types';
 
 const toNumber = (value: unknown, fallback?: number) => {
   if (value === '' || value === null || value === undefined) return fallback;
@@ -60,6 +60,7 @@ const schema = yup.object({
   truck_id: optionalId(),
   driver_id: optionalId(),
   trip_id: optionalId(),
+  hitachi_rental_id: optionalId(),
 });
 
 interface ExpenseFormData {
@@ -70,6 +71,7 @@ interface ExpenseFormData {
   truck_id?: number | null;
   driver_id?: number | null;
   trip_id?: number | null;
+  hitachi_rental_id?: number | null;
 }
 
 export default function ExpenseForm() {
@@ -81,6 +83,7 @@ export default function ExpenseForm() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [hitachiRentals, setHitachiRentals] = useState<HitachiRental[]>([]);
   const [billFile, setBillFile] = useState<File | null>(null);
   const [existingBillPath, setExistingBillPath] = useState<string | null>(null);
 
@@ -103,11 +106,13 @@ export default function ExpenseForm() {
       fetchList<Truck>('/trucks'),
       fetchList<Driver>('/drivers'),
       fetchList<Trip>('/trips', { per_page: 100 }),
-    ]).then(([categoriesRes, t, d, tripList]) => {
+      fetchList<HitachiRental>('/hitachi/rentals', { per_page: 100 }),
+    ]).then(([categoriesRes, t, d, tripList, rentalList]) => {
       setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
       setTrucks(t);
       setDrivers(d);
       setTrips(tripList);
+      setHitachiRentals(rentalList);
     });
   }, []);
 
@@ -125,6 +130,7 @@ export default function ExpenseForm() {
           truck_id: data.truck_id ?? undefined,
           driver_id: data.driver_id ?? undefined,
           trip_id: data.trip_id ?? undefined,
+          hitachi_rental_id: data.hitachi_rental_id ?? undefined,
         });
         setExistingBillPath(data.bill_path ?? null);
       }
@@ -145,6 +151,7 @@ export default function ExpenseForm() {
     truck_id: data.truck_id ?? undefined,
     driver_id: data.driver_id ?? undefined,
     trip_id: data.trip_id ?? undefined,
+    hitachi_rental_id: data.hitachi_rental_id ?? undefined,
   });
 
   const buildFormData = (data: ExpenseFormData) => {
@@ -193,7 +200,7 @@ export default function ExpenseForm() {
     <Box>
       <PageHeader
         title={isEdit ? 'Edit Expense' : 'Add Expense'}
-        subtitle="Record operational or trip-related expenses"
+        subtitle="Record operational, trip, or Hitachi rental expenses"
         breadcrumbs={[{ label: 'Expenses', to: '/expenses' }, { label: isEdit ? 'Edit' : 'New' }]}
         action={
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/expenses')}>
@@ -269,6 +276,18 @@ export default function ExpenseForm() {
                   {trips.map((trip) => (
                     <MenuItem key={trip.id} value={trip.id}>
                       {trip.trip_number}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField {...register('hitachi_rental_id')} label="Hitachi Rental (Optional)" select fullWidth>
+                  <MenuItem value="">None</MenuItem>
+                  {hitachiRentals.map((rental) => (
+                    <MenuItem key={rental.id} value={rental.id}>
+                      {rental.rental_number}
+                      {rental.hitachi?.machine_number ? ` · ${rental.hitachi.machine_number}` : ''}
+                      {rental.customer?.name ? ` · ${rental.customer.name}` : ''}
                     </MenuItem>
                   ))}
                 </TextField>

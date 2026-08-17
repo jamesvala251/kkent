@@ -45,7 +45,6 @@ const schema = yup.object({
   cgst_rate: optionalNumber(),
   sgst_rate: optionalNumber(),
   igst_rate: optionalNumber(),
-  payment_status: yup.string(),
   paid_amount: optionalNumber(),
   notes: yup.string(),
 });
@@ -60,7 +59,6 @@ interface InvoiceFormData {
   cgst_rate?: number;
   sgst_rate?: number;
   igst_rate?: number;
-  payment_status?: string;
   paid_amount?: number;
   notes?: string;
 }
@@ -130,7 +128,6 @@ export default function InvoiceForm() {
       sgst_rate: 9,
       igst_rate: 0,
       paid_amount: 0,
-      payment_status: 'pending',
       trip_id: null,
       hitachi_rental_id: null,
     },
@@ -138,6 +135,18 @@ export default function InvoiceForm() {
 
   const watched = useWatch({ control });
   const gst = useMemo(() => calcTotals(watched), [watched]);
+
+  const selectedCustomerId = Number(watched.customer_id) || 0;
+
+  const customerTrips = useMemo(() => {
+    if (!selectedCustomerId) return [];
+    return trips.filter((t) => Number(t.customer_id) === selectedCustomerId);
+  }, [trips, selectedCustomerId]);
+
+  const customerRentals = useMemo(() => {
+    if (!selectedCustomerId) return [];
+    return rentals.filter((r) => Number(r.customer_id) === selectedCustomerId);
+  }, [rentals, selectedCustomerId]);
 
   const applyRental = (rental: HitachiRental) => {
     setValue('hitachi_rental_id', rental.id);
@@ -202,7 +211,6 @@ export default function InvoiceForm() {
           cgst_rate: resolveRate(data.cgst_rate, data.cgst, subtotal),
           sgst_rate: resolveRate(data.sgst_rate, data.sgst, subtotal),
           igst_rate: resolveRate(data.igst_rate, data.igst, subtotal),
-          payment_status: data.payment_status,
           paid_amount: Number(data.paid_amount ?? 0),
           notes: data.notes ?? '',
         });
@@ -238,7 +246,6 @@ export default function InvoiceForm() {
       cgst_rate: data.cgst_rate ?? 0,
       sgst_rate: data.sgst_rate ?? 0,
       igst_rate: data.igst_rate ?? 0,
-      payment_status: data.payment_status as Invoice['payment_status'] | undefined,
       paid_amount: data.paid_amount,
       notes: data.notes || undefined,
     };
@@ -308,7 +315,19 @@ export default function InvoiceForm() {
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
-                  {...register('customer_id')}
+                  {...register('customer_id', {
+                    onChange: (e) => {
+                      const nextCustomerId = Number(e.target.value) || 0;
+                      const linkedTrip = trips.find((t) => t.id === Number(watched.trip_id));
+                      if (linkedTrip && Number(linkedTrip.customer_id) !== nextCustomerId) {
+                        setValue('trip_id', null);
+                      }
+                      const linkedRental = rentals.find((r) => r.id === Number(watched.hitachi_rental_id));
+                      if (linkedRental && Number(linkedRental.customer_id) !== nextCustomerId) {
+                        setValue('hitachi_rental_id', null);
+                      }
+                    },
+                  })}
                   label="Customer"
                   select
                   fullWidth
@@ -326,6 +345,7 @@ export default function InvoiceForm() {
                   fullWidth
                   label="Hitachi Rental (Optional)"
                   value={watched.hitachi_rental_id ?? ''}
+                  disabled={!selectedCustomerId}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (!value) {
@@ -335,12 +355,16 @@ export default function InvoiceForm() {
                     const rental = rentals.find((item) => item.id === Number(value));
                     if (rental) applyRental(rental);
                   }}
-                  helperText="Selecting a rental fills customer & subtotal"
+                  helperText={
+                    !selectedCustomerId
+                      ? 'Select a customer to see related Hitachi rentals'
+                      : 'Selecting a rental fills subtotal'
+                  }
                 >
                   <MenuItem value="">None</MenuItem>
-                  {rentals.map((r) => (
+                  {customerRentals.map((r) => (
                     <MenuItem key={r.id} value={r.id}>
-                      {r.rental_number} · {r.hitachi?.machine_number ?? 'Machine'} · {r.customer?.name ?? 'Customer'} · {billingLabel(r)} · {formatCurrency(Number(r.total_amount))}
+                      {r.rental_number} · {r.hitachi?.machine_number ?? 'Machine'} · {billingLabel(r)} · {formatCurrency(Number(r.total_amount))}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -351,17 +375,37 @@ export default function InvoiceForm() {
                   fullWidth
                   label="Trip (Optional)"
                   value={watched.trip_id ?? ''}
-                  disabled={Boolean(watched.hitachi_rental_id)}
+                  disabled={!selectedCustomerId || Boolean(watched.hitachi_rental_id)}
                   onChange={(e) => {
                     const value = e.target.value;
                     setValue('trip_id', value ? Number(value) : null);
-                    if (value) setValue('hitachi_rental_id', null);
+                    if (value) {
+                      setValue('hitachi_rental_id', null);
+                      const trip = trips.find((t) => t.id === Number(value));
+                      if (trip?.total_freight != null && Number(trip.total_freight) > 0) {
+                        setValue('subtotal', Number(trip.total_freight));
+                      }
+                    }
                   }}
-                  helperText={watched.hitachi_rental_id ? 'Clear Hitachi rental to link a trip' : ' '}
+                  helperText={
+                    watched.hitachi_rental_id
+                      ? 'Clear Hitachi rental to link a trip'
+                      : !selectedCustomerId
+                        ? 'Select a customer to see related trips'
+                        : customerTrips.length === 0
+                          ? 'No trips found for this customer'
+                          : ' '
+                  }
                 >
                   <MenuItem value="">None</MenuItem>
-                  {trips.map((t) => (
-                    <MenuItem key={t.id} value={t.id}>{t.trip_number}</MenuItem>
+                  {customerTrips.map((t) => (
+                    <MenuItem key={t.id} value={t.id}>
+                      {t.trip_number}
+                      {t.from_location || t.to_location
+                        ? ` · ${t.from_location || '-'} → ${t.to_location || '-'}`
+                        : ''}
+                      {t.total_freight != null ? ` · ${formatCurrency(Number(t.total_freight))}` : ''}
+                    </MenuItem>
                   ))}
                 </TextField>
               </Grid>
@@ -378,16 +422,6 @@ export default function InvoiceForm() {
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField {...register('due_date')} label="Due Date" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
               </Grid>
-              {isEdit && (
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('payment_status')} label="Payment Status" select fullWidth>
-                    <MenuItem value="pending">Pending</MenuItem>
-                    <MenuItem value="paid">Paid</MenuItem>
-                    <MenuItem value="partial">Partial</MenuItem>
-                    <MenuItem value="overdue">Overdue</MenuItem>
-                  </TextField>
-                </Grid>
-              )}
             </Grid>
 
             <Divider sx={{ my: 3 }} />

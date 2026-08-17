@@ -30,6 +30,10 @@ class ExpenseRepository extends BaseRepository
             $query->whereDate('expense_date', '<=', $filters['date_to']);
         }
 
+        if (! empty($filters['hitachi_rental_id'])) {
+            $query->where('hitachi_rental_id', $filters['hitachi_rental_id']);
+        }
+
         return $query;
     }
 
@@ -43,7 +47,7 @@ class ExpenseRepository extends BaseRepository
 
     public function all(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = $this->applyFilters($this->query()->with(['category', 'truck', 'driver', 'trip']), $filters);
+        $query = $this->applyFilters($this->query()->with(['category', 'truck', 'driver', 'trip', 'hitachiRental.hitachi']), $filters);
         $query->orderBy($filters['sort_by'] ?? 'expense_date', $filters['sort_order'] ?? 'desc');
 
         return $query->paginate($filters['per_page'] ?? $perPage);

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Salary;
@@ -12,7 +13,7 @@ use Illuminate\Support\Collection;
 
 class ReportService
 {
-    public function generate(string $type, string $dateFrom, string $dateTo): array
+    public function generate(string $type, string $dateFrom, string $dateTo, ?int $customerId = null): array
     {
         return match ($type) {
             'trip_summary' => $this->tripSummary($dateFrom, $dateTo),
@@ -21,7 +22,7 @@ class ReportService
             'salary' => $this->salaryReport($dateFrom, $dateTo),
             'invoice' => $this->invoiceReport($dateFrom, $dateTo),
             'fleet' => $this->fleetReport($dateFrom, $dateTo),
-            'customer_wise' => $this->customerWiseReport($dateFrom, $dateTo),
+            'customer_wise' => $this->customerWiseReport($dateFrom, $dateTo, $customerId),
             default => throw new \InvalidArgumentException('Invalid report type'),
         };
     }
@@ -256,7 +257,6 @@ class ReportService
             'total_amount' => (float) $i->total_amount,
             'paid_amount' => (float) $i->paid_amount,
             'balance' => (float) $i->total_amount - (float) $i->paid_amount,
-            'payment_status' => $i->payment_status,
         ])->values()->all();
 
         return [
@@ -276,7 +276,6 @@ class ReportService
                 ['key' => 'total_amount', 'label' => 'Total', 'format' => 'currency'],
                 ['key' => 'paid_amount', 'label' => 'Paid', 'format' => 'currency'],
                 ['key' => 'balance', 'label' => 'Balance', 'format' => 'currency'],
-                ['key' => 'payment_status', 'label' => 'Status'],
             ],
             'rows' => $rows,
             'chart' => $this->weeklyChart($invoices, 'invoice_date', 'total_amount', 'Invoices by Week'),
@@ -332,8 +331,12 @@ class ReportService
         ];
     }
 
-    private function customerWiseReport(string $dateFrom, string $dateTo): array
+    private function customerWiseReport(string $dateFrom, string $dateTo, ?int $customerId = null): array
     {
+        if ($customerId) {
+            return $this->specificCustomerReport($dateFrom, $dateTo, $customerId);
+        }
+
         $trips = Trip::with('customer')
             ->whereDate('start_date', '>=', $dateFrom)
             ->whereDate('start_date', '<=', $dateTo)
@@ -350,13 +353,13 @@ class ReportService
             ->filter()
             ->values();
 
-        $rows = $customerIds->map(function ($customerId) use ($trips, $invoices) {
-            $customerTrips = $trips->where('customer_id', $customerId);
-            $customerInvoices = $invoices->where('customer_id', $customerId);
+        $rows = $customerIds->map(function ($id) use ($trips, $invoices) {
+            $customerTrips = $trips->where('customer_id', $id);
+            $customerInvoices = $invoices->where('customer_id', $id);
             $customer = $customerTrips->first()?->customer ?? $customerInvoices->first()?->customer;
 
             return [
-                'customer' => $customer?->name ?? "Customer #{$customerId}",
+                'customer' => $customer?->name ?? "Customer #{$id}",
                 'mobile' => $customer?->mobile ?? '-',
                 'trip_count' => $customerTrips->count(),
                 'total_freight' => round($customerTrips->sum('total_freight'), 2),
@@ -400,6 +403,67 @@ class ReportService
                     ['name' => 'Freight', 'data' => $grouped->take(10)->pluck('total_freight')->all()],
                 ],
             ],
+        ];
+    }
+
+    private function specificCustomerReport(string $dateFrom, string $dateTo, int $customerId): array
+    {
+        $customer = Customer::find($customerId);
+        $customerName = $customer?->name ?? "Customer #{$customerId}";
+
+        $trips = Trip::with(['truck', 'driver'])
+            ->where('customer_id', $customerId)
+            ->whereDate('start_date', '>=', $dateFrom)
+            ->whereDate('start_date', '<=', $dateTo)
+            ->orderBy('start_date')
+            ->get();
+
+        $invoices = Invoice::where('customer_id', $customerId)
+            ->whereDate('invoice_date', '>=', $dateFrom)
+            ->whereDate('invoice_date', '<=', $dateTo)
+            ->get();
+
+        $rows = $trips->map(fn ($t) => [
+            'trip_number' => $t->trip_number,
+            'start_date' => $t->start_date?->format('Y-m-d'),
+            'from_location' => $t->from_location ?: '-',
+            'to_location' => $t->to_location ?: '-',
+            'truck' => $t->truck?->truck_number ?? '-',
+            'driver' => $t->driver?->name ?? '-',
+            'total_freight' => (float) $t->total_freight,
+            'total_expense' => (float) $t->total_expense,
+            'profit' => (float) $t->profit,
+            'status' => $t->status,
+        ])->values()->all();
+
+        return [
+            'title' => "Customer Wise Report — {$customerName}",
+            'type' => 'customer_wise',
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'summary' => [
+                ['label' => 'Customer', 'value' => $customerName],
+                ['label' => 'Total Trips', 'value' => $trips->count()],
+                ['label' => 'Total Freight', 'value' => round($trips->sum('total_freight'), 2)],
+                ['label' => 'Total Expense', 'value' => round($trips->sum('total_expense'), 2)],
+                ['label' => 'Total Profit', 'value' => round($trips->sum('profit'), 2)],
+                ['label' => 'Total Billed', 'value' => round($invoices->sum('total_amount'), 2)],
+                ['label' => 'Outstanding', 'value' => round($invoices->sum(fn ($i) => $i->total_amount - $i->paid_amount), 2)],
+            ],
+            'columns' => [
+                ['key' => 'trip_number', 'label' => 'Trip #'],
+                ['key' => 'start_date', 'label' => 'Date'],
+                ['key' => 'from_location', 'label' => 'From'],
+                ['key' => 'to_location', 'label' => 'To'],
+                ['key' => 'truck', 'label' => 'Truck'],
+                ['key' => 'driver', 'label' => 'Driver'],
+                ['key' => 'total_freight', 'label' => 'Freight', 'format' => 'currency'],
+                ['key' => 'total_expense', 'label' => 'Expense', 'format' => 'currency'],
+                ['key' => 'profit', 'label' => 'Profit', 'format' => 'currency'],
+                ['key' => 'status', 'label' => 'Status'],
+            ],
+            'rows' => $rows,
+            'chart' => $this->weeklyChart($trips, 'start_date', 'total_freight', 'Freight by Day'),
         ];
     }
 

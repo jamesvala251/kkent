@@ -20,6 +20,10 @@ class DatabaseSeeder extends Seeder
         $this->seedAdminUser();
         $this->call(HitachiSampleSeeder::class);
         $this->call(ChallanSeeder::class);
+
+        if (app()->environment('local')) {
+            $this->call(LocalSampleDataSeeder::class);
+        }
     }
 
     private function seedRolesAndPermissions(): void

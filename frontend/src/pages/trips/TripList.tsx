@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Chip, IconButton, MenuItem, TextField, Typography } from '@mui/material';
+import { Box, Button, IconButton, MenuItem, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import PageHeader from '../../components/common/PageHeader';
@@ -25,7 +25,6 @@ const emptySummary: TripSummary = {
 };
 
 const initialFilters: FilterValues = {
-  status: '',
   customer_id: '',
   truck_id: '',
   driver_id: '',
@@ -93,13 +92,6 @@ export default function TripList() {
     { id: 'total_expense', label: 'Expense', align: 'right', format: (r) => formatCurrency(r.total_expense || 0) },
     { id: 'profit', label: 'Profit', align: 'right', format: (r) => formatCurrency(r.profit || 0) },
     {
-      id: 'status',
-      label: 'Status',
-      format: (r) => (
-        <Chip label={r.status.replace('_', ' ')} size="small" color={r.status === 'completed' ? 'success' : r.status === 'running' ? 'info' : 'warning'} />
-      ),
-    },
-    {
       id: 'actions',
       label: '',
       align: 'right',
@@ -133,22 +125,6 @@ export default function TripList() {
           setAppliedFilters(initialFilters);
         }}
       >
-        <FilterField>
-          <TextField
-            select
-            label="Status"
-            fullWidth
-            size="small"
-            value={filters.status ?? ''}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="running">Running</MenuItem>
-            <MenuItem value="completed">Completed</MenuItem>
-            <MenuItem value="cancelled">Cancelled</MenuItem>
-          </TextField>
-        </FilterField>
         <FilterField>
           <TextField
             select

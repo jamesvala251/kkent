@@ -29,7 +29,6 @@ const schema = yup.object({
   fuel_type: yup.string().required('Fuel type is required'),
   gps_number: yup.string(),
   current_km: yup.number().transform((v) => (Number.isNaN(v) ? 0 : v)).optional(),
-  status: yup.string().required(),
 });
 
 interface TruckFormData {
@@ -48,7 +47,6 @@ interface TruckFormData {
   fuel_type: string;
   gps_number?: string;
   current_km?: number;
-  status: string;
 }
 
 const toDateInput = (value?: string) => (value ? value.split('T')[0] : '');
@@ -67,7 +65,6 @@ export default function TruckForm() {
   } = useForm<TruckFormData>({
     resolver: yupResolver(schema) as Resolver<TruckFormData>,
     defaultValues: {
-      status: 'active',
       fuel_type: 'diesel',
       current_km: 0,
     },
@@ -94,7 +91,6 @@ export default function TruckForm() {
             fuel_type: data.fuel_type ?? 'diesel',
             gps_number: data.gps_number ?? '',
             current_km: data.current_km != null ? Number(data.current_km) : 0,
-            status: data.status ?? 'active',
           });
         }
         setLoadingData(false);
@@ -103,12 +99,13 @@ export default function TruckForm() {
   }, [id, isEdit, reset]);
 
   const onSubmit = async (data: TruckFormData) => {
+    const payload: Partial<Truck> = isEdit ? data : { ...data, status: 'active' };
     try {
       if (isEdit && id) {
-        await updateItem<Truck>('/trucks', id, data);
+        await updateItem<Truck>('/trucks', id, payload);
         toast.success('Truck updated');
       } else {
-        await createItem<Truck>('/trucks', data);
+        await createItem<Truck>('/trucks', payload);
         toast.success('Truck created');
       }
       navigate('/trucks');
@@ -186,21 +183,6 @@ export default function TruckForm() {
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField {...register('gps_number')} label="GPS Number" fullWidth margin="normal" />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  {...register('status')}
-                  label="Status"
-                  select
-                  fullWidth
-                  margin="normal"
-                  slotProps={{ inputLabel: { shrink: true } }}
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="maintenance">Maintenance</MenuItem>
-                  <MenuItem value="breakdown">Breakdown</MenuItem>
-                </TextField>
               </Grid>
             </Grid>
 

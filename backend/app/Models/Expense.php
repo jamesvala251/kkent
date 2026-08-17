@@ -13,7 +13,7 @@ class Expense extends Model
     use HasAuditColumns, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'expense_date', 'truck_id', 'driver_id', 'trip_id', 'category_id',
+        'expense_date', 'truck_id', 'driver_id', 'trip_id', 'hitachi_rental_id', 'category_id',
         'amount', 'description', 'bill_path',
         'created_by', 'updated_by', 'deleted_by',
     ];
@@ -44,5 +44,10 @@ class Expense extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function hitachiRental(): BelongsTo
+    {
+        return $this->belongsTo(HitachiRental::class, 'hitachi_rental_id');
     }
 }

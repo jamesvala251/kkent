@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Chip, MenuItem, TextField } from '@mui/material';
+import { Button, MenuItem, TextField } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,7 +18,6 @@ import { toast } from 'react-toastify';
 
 const initialFilters: FilterValues = {
   customer_id: '',
-  payment_status: '',
   date_from: '',
   date_to: '',
   search: '',
@@ -94,17 +93,6 @@ export default function InvoiceList() {
     { id: 'subtotal', label: 'Subtotal', align: 'right', format: (r) => formatCurrency(Number(r.subtotal)) },
     { id: 'total_amount', label: 'Total', align: 'right', format: (r) => formatCurrency(Number(r.total_amount)) },
     {
-      id: 'payment_status',
-      label: 'Status',
-      format: (r) => (
-        <Chip
-          label={r.payment_status}
-          size="small"
-          color={r.payment_status === 'paid' ? 'success' : r.payment_status === 'overdue' ? 'error' : 'warning'}
-        />
-      ),
-    },
-    {
       id: 'actions',
       label: 'Actions',
       align: 'right',
@@ -164,22 +152,6 @@ export default function InvoiceList() {
             {customers.map((c) => (
               <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
             ))}
-          </TextField>
-        </FilterField>
-        <FilterField>
-          <TextField
-            select
-            label="Payment Status"
-            fullWidth
-            size="small"
-            value={filters.payment_status ?? ''}
-            onChange={(e) => setFilters({ ...filters, payment_status: e.target.value })}
-          >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="paid">Paid</MenuItem>
-            <MenuItem value="partial">Partial</MenuItem>
-            <MenuItem value="overdue">Overdue</MenuItem>
           </TextField>
         </FilterField>
         <FilterField>

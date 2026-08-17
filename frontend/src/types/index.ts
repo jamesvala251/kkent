@@ -226,9 +226,11 @@ export interface Expense {
   truck_id?: number | null;
   driver_id?: number | null;
   trip_id?: number | null;
+  hitachi_rental_id?: number | null;
   truck?: Truck;
   driver?: Driver;
   trip?: Trip;
+  hitachi_rental?: HitachiRental;
   amount: number;
   description?: string;
   bill_path?: string | null;
