@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Chip, IconButton, MenuItem, TextField } from '@mui/material';
+import { Button, IconButton, MenuItem, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,7 +14,7 @@ import { buildFilterParams, type FilterValues } from '../../utils/listFilters';
 import type { Truck } from '../../types';
 import { toast } from 'react-toastify';
 
-const initialFilters: FilterValues = { status: '', fuel_type: '', search: '' };
+const initialFilters: FilterValues = { fuel_type: '', search: '' };
 
 export default function TruckList() {
   const navigate = useNavigate();
@@ -74,25 +74,6 @@ export default function TruckList() {
       format: (r) => formatDate(r.insurance_expiry || ''),
     },
     {
-      id: 'status',
-      label: 'Status',
-      format: (r) => (
-        <Chip
-          label={r.status}
-          size="small"
-          color={
-            r.status === 'active'
-              ? 'success'
-              : r.status === 'maintenance'
-                ? 'warning'
-                : r.status === 'breakdown'
-                  ? 'error'
-                  : 'default'
-          }
-        />
-      ),
-    },
-    {
       id: 'actions',
       label: 'Actions',
       align: 'right',
@@ -131,22 +112,6 @@ export default function TruckList() {
           setAppliedFilters(initialFilters);
         }}
       >
-        <FilterField>
-          <TextField
-            select
-            label="Status"
-            fullWidth
-            size="small"
-            value={filters.status ?? ''}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-            <MenuItem value="maintenance">Maintenance</MenuItem>
-            <MenuItem value="breakdown">Breakdown</MenuItem>
-          </TextField>
-        </FilterField>
         <FilterField>
           <TextField
             select

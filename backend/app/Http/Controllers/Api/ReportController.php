@@ -29,12 +29,14 @@ class ReportController extends ApiController
             'type' => ['required', Rule::in(self::REPORT_TYPES)],
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
         ]);
 
         $report = $reportService->generate(
             $validated['type'],
             $validated['date_from'],
-            $validated['date_to']
+            $validated['date_to'],
+            isset($validated['customer_id']) ? (int) $validated['customer_id'] : null
         );
 
         return $this->success($report);
@@ -47,12 +49,14 @@ class ReportController extends ApiController
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],
             'format' => ['required', Rule::in(['pdf', 'excel'])],
+            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
         ]);
 
         $report = $reportService->generate(
             $validated['type'],
             $validated['date_from'],
-            $validated['date_to']
+            $validated['date_to'],
+            isset($validated['customer_id']) ? (int) $validated['customer_id'] : null
         );
 
         $extension = $validated['format'] === 'excel' ? 'xlsx' : 'pdf';

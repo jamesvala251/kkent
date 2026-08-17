@@ -80,6 +80,16 @@ export default function ExpenseList() {
     { id: 'expense_date', label: 'Date', format: (r) => formatDate(r.expense_date) },
     { id: 'category', label: 'Category', format: (r) => r.category?.name ?? '-' },
     { id: 'truck', label: 'Truck', format: (r) => r.truck?.truck_number ?? '-' },
+    {
+      id: 'reference',
+      label: 'Linked To',
+      format: (r) =>
+        r.hitachi_rental?.rental_number
+          ? `Hitachi ${r.hitachi_rental.rental_number}`
+          : r.trip?.trip_number
+            ? `Trip ${r.trip.trip_number}`
+            : '-',
+    },
     { id: 'description', label: 'Description', minWidth: 200 },
     { id: 'amount', label: 'Amount', align: 'right', format: (r) => formatCurrency(Number(r.amount)) },
     {
@@ -105,7 +115,7 @@ export default function ExpenseList() {
     <>
       <PageHeader
         title="Expenses"
-        subtitle="Track operational and trip-related expenses"
+        subtitle="Track operational, trip, and Hitachi rental expenses"
         breadcrumbs={[{ label: 'Expenses' }]}
         action={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/expenses/new')}>

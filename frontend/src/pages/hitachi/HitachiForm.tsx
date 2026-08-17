@@ -33,7 +33,6 @@ const schema = yup.object({
   hourly_rate: yup.number().transform((_v, o) => toNumber(o, 0)).optional(),
   daily_rate: yup.number().transform((_v, o) => toNumber(o, 0)).optional(),
   monthly_rate: yup.number().transform((_v, o) => toNumber(o, 0)).optional(),
-  status: yup.string().required(),
 });
 
 interface HitachiFormData {
@@ -50,7 +49,6 @@ interface HitachiFormData {
   hourly_rate?: number;
   daily_rate?: number;
   monthly_rate?: number;
-  status: string;
 }
 
 const toDateInput = (value?: string) => (value ? value.split('T')[0] : '');
@@ -69,7 +67,6 @@ export default function HitachiForm() {
   } = useForm<HitachiFormData>({
     resolver: yupResolver(schema) as Resolver<HitachiFormData>,
     defaultValues: {
-      status: 'active',
       fuel_type: 'diesel',
       current_hours: 0,
       current_km: 0,
@@ -98,7 +95,6 @@ export default function HitachiForm() {
           hourly_rate: data.hourly_rate != null ? Number(data.hourly_rate) : 0,
           daily_rate: data.daily_rate != null ? Number(data.daily_rate) : 0,
           monthly_rate: data.monthly_rate != null ? Number(data.monthly_rate) : 0,
-          status: data.status ?? 'active',
         });
       }
       setLoadingData(false);
@@ -111,12 +107,13 @@ export default function HitachiForm() {
   };
 
   const onSubmit = async (data: HitachiFormData) => {
+    const payload: Partial<HitachiMachine> = isEdit ? data : { ...data, status: 'active' };
     try {
       if (isEdit && id) {
-        await updateItem<HitachiMachine>('/hitachi-machines', id, data);
+        await updateItem<HitachiMachine>('/hitachi-machines', id, payload);
         toast.success('Hitachi machine updated');
       } else {
-        await createItem<HitachiMachine>('/hitachi-machines', data);
+        await createItem<HitachiMachine>('/hitachi-machines', payload);
         toast.success('Hitachi machine created');
       }
       navigate('/hitachi');
@@ -158,14 +155,6 @@ export default function HitachiForm() {
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('bucket_capacity')} label="Bucket Capacity" fullWidth />
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('status')} label="Status" select fullWidth>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="maintenance">Maintenance</MenuItem>
-                  <MenuItem value="breakdown">Breakdown</MenuItem>
-                </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('purchase_date')} label="Purchase Date" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />

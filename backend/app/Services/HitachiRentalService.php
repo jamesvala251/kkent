@@ -7,7 +7,6 @@ use App\Models\HitachiMachine;
 use App\Models\HitachiRental;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class HitachiRentalService
 {
@@ -63,9 +62,11 @@ class HitachiRentalService
     public function create(array $data): HitachiRental
     {
         return DB::transaction(function () use ($data) {
-            $this->assertMachineAvailable($data['hitachi_id'], $data['status'] ?? 'booked');
             $data = $this->calculateFields($data);
             $data['rental_number'] = $this->generateRentalNumber();
+            if (empty($data['status'])) {
+                $data['status'] = 'booked';
+            }
 
             return HitachiRental::create($data);
         });
@@ -74,22 +75,9 @@ class HitachiRentalService
     public function update(HitachiRental $rental, array $data): HitachiRental
     {
         return DB::transaction(function () use ($rental, $data) {
-            if (
-                isset($data['hitachi_id'], $data['status'])
-                && (int) $data['hitachi_id'] !== (int) $rental->hitachi_id
-                && in_array($data['status'], ['booked', 'running'], true)
-            ) {
-                $this->assertMachineAvailable($data['hitachi_id'], $data['status'], $rental->id);
-            } elseif (
-                isset($data['status'])
-                && in_array($data['status'], ['booked', 'running'], true)
-                && ! in_array($rental->status, ['booked', 'running'], true)
-            ) {
-                $this->assertMachineAvailable($data['hitachi_id'] ?? $rental->hitachi_id, $data['status'], $rental->id);
-            }
-
             $merged = array_merge($rental->toArray(), $data);
             $data = $this->calculateFields($merged, $rental);
+            unset($data['status']);
             $rental->update($data);
 
             return $rental->fresh(['hitachi', 'customer']);
@@ -180,26 +168,6 @@ class HitachiRentalService
         $endDate = Carbon::parse($end);
 
         return (float) max(1, $startDate->diffInDays($endDate) + 1);
-    }
-
-    private function assertMachineAvailable(int $hitachiId, string $status, ?int $exceptRentalId = null): void
-    {
-        if (! in_array($status, ['booked', 'running'], true)) {
-            return;
-        }
-
-        $query = HitachiRental::where('hitachi_id', $hitachiId)
-            ->whereIn('status', ['booked', 'running']);
-
-        if ($exceptRentalId) {
-            $query->where('id', '!=', $exceptRentalId);
-        }
-
-        if ($query->exists()) {
-            throw ValidationException::withMessages([
-                'hitachi_id' => ['This hitachi machine already has an active rental.'],
-            ]);
-        }
     }
 
     private function generateRentalNumber(): string

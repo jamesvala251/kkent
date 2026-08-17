@@ -18,7 +18,8 @@ import PageHeader from '../../components/common/PageHeader';
 import DataTable, { type Column } from '../../components/common/DataTable';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
-import { downloadReport, formatCurrency } from '../../services/resourceService';
+import { downloadReport, fetchList, formatCurrency } from '../../services/resourceService';
+import type { Customer } from '../../types';
 
 const reportTypes = [
   { value: 'trip_summary', label: 'Trip Summary Report' },
@@ -71,16 +72,39 @@ export default function Reports() {
   const [reportType, setReportType] = useState('trip_summary');
   const [dateFrom, setDateFrom] = useState(defaultDateFrom);
   const [dateTo, setDateTo] = useState(defaultDateTo);
+  const [customerId, setCustomerId] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<'pdf' | 'excel' | null>(null);
   const [report, setReport] = useState<ReportData | null>(null);
 
+  const showCustomerFilter = reportType === 'customer_wise';
+
+  useEffect(() => {
+    if (!showCustomerFilter) return;
+    fetchList<Customer>('/customers', { per_page: 200, status: 'active' }).then(setCustomers);
+  }, [showCustomerFilter]);
+
+  useEffect(() => {
+    if (!showCustomerFilter) setCustomerId('');
+  }, [showCustomerFilter]);
+
+  const reportParams = useMemo(() => {
+    const params: Record<string, string | number> = {
+      type: reportType,
+      date_from: dateFrom,
+      date_to: dateTo,
+    };
+    if (showCustomerFilter && customerId) {
+      params.customer_id = Number(customerId);
+    }
+    return params;
+  }, [reportType, dateFrom, dateTo, showCustomerFilter, customerId]);
+
   const handleGenerate = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<ReportData>('/reports/generate', {
-        params: { type: reportType, date_from: dateFrom, date_to: dateTo },
-      });
+      const { data } = await api.get<ReportData>('/reports/generate', { params: reportParams });
       setReport(data);
       toast.success('Report generated successfully');
     } catch {
@@ -88,7 +112,7 @@ export default function Reports() {
     } finally {
       setLoading(false);
     }
-  }, [reportType, dateFrom, dateTo]);
+  }, [reportParams]);
 
   useEffect(() => {
     handleGenerate();
@@ -97,7 +121,14 @@ export default function Reports() {
   const handleExport = async (format: 'pdf' | 'excel') => {
     setExporting(format);
     try {
-      await downloadReport(reportType, dateFrom, dateTo, format);
+      await downloadReport(
+        reportType,
+        dateFrom,
+        dateTo,
+        format,
+        undefined,
+        showCustomerFilter && customerId ? { customer_id: Number(customerId) } : undefined,
+      );
       toast.success(`Report exported as ${format.toUpperCase()}`);
     } catch {
       toast.error(`Failed to export ${format.toUpperCase()}`);
@@ -135,8 +166,13 @@ export default function Reports() {
   );
 
   const formatSummaryValue = (item: ReportSummaryItem) => {
+    if (typeof item.value === 'string') return item.value;
+    const label = item.label.toLowerCase();
+    if (/\b(trips|customers|records|categories|trucks|used)\b/.test(label) && !/(freight|billed|expense|profit|amount|salary|revenue)/.test(label)) {
+      return item.value;
+    }
     const currencyKeywords = ['total', 'revenue', 'profit', 'freight', 'expense', 'billed', 'outstanding', 'salary', 'net', 'paid'];
-    if (typeof item.value === 'number' && currencyKeywords.some((kw) => item.label.toLowerCase().includes(kw))) {
+    if (typeof item.value === 'number' && currencyKeywords.some((kw) => label.includes(kw))) {
       return formatCurrency(item.value);
     }
     return item.value;
@@ -155,6 +191,22 @@ export default function Reports() {
                   <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
                 ))}
               </TextField>
+              {showCustomerFilter && (
+                <TextField
+                  select
+                  label="Customer"
+                  fullWidth
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  sx={{ mb: 2 }}
+                  helperText="Select a customer for a detailed trip report, or All for summary"
+                >
+                  <MenuItem value="">All Customers</MenuItem>
+                  {customers.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                  ))}
+                </TextField>
+              )}
               <TextField label="From Date" type="date" fullWidth value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ mb: 2 }} />
               <TextField label="To Date" type="date" fullWidth value={dateTo} onChange={(e) => setDateTo(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ mb: 3 }} />
               <Button variant="contained" fullWidth onClick={handleGenerate} disabled={loading} sx={{ mb: 1 }}>

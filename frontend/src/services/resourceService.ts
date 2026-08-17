@@ -58,6 +58,7 @@ export async function downloadReport(
   dateTo: string,
   format: 'pdf' | 'excel',
   fallbackName?: string,
+  extraParams?: Record<string, string | number | undefined>,
 ): Promise<void> {
   const token = store.getState().auth.token;
   const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -66,7 +67,13 @@ export async function downloadReport(
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
   const response = await axios.get(`${baseURL}/reports/export`, {
-    params: { type, date_from: dateFrom, date_to: dateTo, format },
+    params: {
+      type,
+      date_from: dateFrom,
+      date_to: dateTo,
+      format,
+      ...extraParams,
+    },
     responseType: 'blob',
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

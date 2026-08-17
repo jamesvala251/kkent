@@ -37,6 +37,7 @@ class ExpenseController extends ApiController
             'truck_id' => 'nullable|exists:trucks,id',
             'driver_id' => 'nullable|exists:drivers,id',
             'trip_id' => 'nullable|exists:trips,id',
+            'hitachi_rental_id' => 'nullable|exists:hitachi_rentals,id',
             'category_id' => 'required|exists:expense_categories,id',
             'amount' => 'required|numeric|min:0',
             'description' => 'nullable|string',
@@ -48,12 +49,12 @@ class ExpenseController extends ApiController
         }
         unset($data['bill']);
 
-        return $this->success($this->service->create($data)->load('category'), 'Expense created', 201);
+        return $this->success($this->service->create($data)->load(['category', 'hitachiRental.hitachi']), 'Expense created', 201);
     }
 
     public function show(Expense $expense): JsonResponse
     {
-        return $this->success($expense->load(['category', 'truck', 'driver', 'trip']));
+        return $this->success($expense->load(['category', 'truck', 'driver', 'trip', 'hitachiRental.hitachi']));
     }
 
     public function update(Request $request, Expense $expense): JsonResponse
@@ -63,6 +64,7 @@ class ExpenseController extends ApiController
             'truck_id' => 'nullable|exists:trucks,id',
             'driver_id' => 'nullable|exists:drivers,id',
             'trip_id' => 'nullable|exists:trips,id',
+            'hitachi_rental_id' => 'nullable|exists:hitachi_rentals,id',
             'category_id' => 'sometimes|exists:expense_categories,id',
             'amount' => 'sometimes|numeric|min:0',
             'description' => 'nullable|string',
@@ -77,7 +79,7 @@ class ExpenseController extends ApiController
         }
         unset($data['bill']);
 
-        return $this->success($this->service->update($expense, $data)->load('category'), 'Expense updated');
+        return $this->success($this->service->update($expense, $data)->load(['category', 'hitachiRental.hitachi']), 'Expense updated');
     }
 
     public function destroy(Expense $expense): JsonResponse

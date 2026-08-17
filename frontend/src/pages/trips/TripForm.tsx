@@ -77,7 +77,6 @@ const schema = yup.object({
   advance_received: optionalNumber(),
   compressor: yup.boolean(),
   remarks: yup.string(),
-  status: yup.string().required(),
 });
 
 interface TripFormData {
@@ -103,7 +102,6 @@ interface TripFormData {
   advance_received?: number;
   compressor?: boolean;
   remarks?: string;
-  status: string;
 }
 
 const calcTotalKm = (start?: number | null, end?: number | null) => {
@@ -153,7 +151,6 @@ export default function TripForm() {
       start_date: dayjs().format('YYYY-MM-DD'),
       from_location: '',
       to_location: '',
-      status: 'pending',
       compressor: false,
       diesel_qty: 0,
       diesel_rate: 0,
@@ -258,7 +255,6 @@ export default function TripForm() {
             advance_received: data.advance_received != null ? Number(data.advance_received) : 0,
             compressor: data.compressor ?? false,
             remarks: data.remarks ?? '',
-            status: data.status ?? 'pending',
           });
         }
         setLoadingData(false);
@@ -277,6 +273,9 @@ export default function TripForm() {
       hitachi_id: data.hitachi_id ?? undefined,
       end_date: data.end_date || undefined,
     };
+    if (!isEdit) {
+      payload.status = 'pending';
+    }
     try {
       if (isEdit && id) {
         await updateItem<Trip>('/trips', id, payload);
@@ -482,14 +481,6 @@ export default function TripForm() {
                     label="Compressor"
                     sx={{ mt: 2 }}
                   />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('status')} label="Status" select fullWidth>
-                    <MenuItem value="pending">Pending</MenuItem>
-                    <MenuItem value="running">Running</MenuItem>
-                    <MenuItem value="completed">Completed</MenuItem>
-                    <MenuItem value="cancelled">Cancelled</MenuItem>
-                  </TextField>
                 </Grid>
               </Grid>
             </CardContent>

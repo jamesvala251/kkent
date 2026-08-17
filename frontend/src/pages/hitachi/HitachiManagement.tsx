@@ -50,7 +50,6 @@ const emptyRentalForm = {
   rate: '',
   advance_received: '',
   operator_name: '',
-  status: 'booked',
   notes: '',
 };
 
@@ -60,15 +59,8 @@ const billingLabel: Record<BillingType, string> = {
   monthly: 'Monthly',
 };
 
-const statusColor = (status: string) => {
-  if (status === 'running') return 'info';
-  if (status === 'completed') return 'success';
-  if (status === 'cancelled') return 'default';
-  return 'warning';
-};
-
-const machineInitialFilters: FilterValues = { status: '', search: '' };
-const rentalInitialFilters: FilterValues = { status: '', customer_id: '', hitachi_id: '', billing_type: '' };
+const machineInitialFilters: FilterValues = { search: '' };
+const rentalInitialFilters: FilterValues = { customer_id: '', hitachi_id: '', billing_type: '' };
 
 export default function HitachiManagement() {
   const navigate = useNavigate();
@@ -175,7 +167,6 @@ export default function HitachiManagement() {
         rate: String(rental.rate ?? 0),
         advance_received: rental.advance_received != null ? String(rental.advance_received) : '',
         operator_name: rental.operator_name ?? '',
-        status: rental.status,
         notes: rental.notes ?? '',
       });
     } else {
@@ -206,8 +197,8 @@ export default function HitachiManagement() {
         rate: rentalForm.rate ? Number(rentalForm.rate) : undefined,
         advance_received: Number(rentalForm.advance_received) || 0,
         operator_name: rentalForm.operator_name || null,
-        status: rentalForm.status,
         notes: rentalForm.notes || null,
+        ...(editingRental ? {} : { status: 'booked' }),
       };
 
       if (editingRental) {
@@ -265,15 +256,10 @@ export default function HitachiManagement() {
       label: 'On Rent',
       format: (r) =>
         r.active_rental ? (
-          <Chip label={r.active_rental.status} size="small" color={statusColor(r.active_rental.status)} />
+          <Chip label="On Rent" size="small" color="info" />
         ) : (
           <Chip label="Available" size="small" variant="outlined" />
         ),
-    },
-    {
-      id: 'status',
-      label: 'Status',
-      format: (r) => <Chip label={r.status} size="small" color={r.status === 'active' ? 'success' : 'default'} />,
     },
     {
       id: 'actions',
@@ -320,11 +306,6 @@ export default function HitachiManagement() {
     { id: 'rate', label: 'Rate', align: 'right', format: (r) => formatCurrency(Number(r.rate)) },
     { id: 'total_amount', label: 'Total', align: 'right', format: (r) => formatCurrency(Number(r.total_amount)) },
     { id: 'balance', label: 'Balance', align: 'right', format: (r) => formatCurrency(Number(r.balance) || 0) },
-    {
-      id: 'status',
-      label: 'Status',
-      format: (r) => <Chip label={r.status} size="small" color={statusColor(r.status)} />,
-    },
     {
       id: 'actions',
       label: 'Actions',
@@ -405,22 +386,6 @@ export default function HitachiManagement() {
               setAppliedMachineFilters(machineInitialFilters);
             }}
           >
-            <FilterField>
-              <TextField
-                select
-                label="Status"
-                fullWidth
-                size="small"
-                value={machineFilters.status ?? ''}
-                onChange={(e) => setMachineFilters({ ...machineFilters, status: e.target.value })}
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-                <MenuItem value="maintenance">Maintenance</MenuItem>
-                <MenuItem value="breakdown">Breakdown</MenuItem>
-              </TextField>
-            </FilterField>
             <FilterField size={{ xs: 12, sm: 6, md: 4 }}>
               <TextField
                 label="Search"
@@ -445,22 +410,6 @@ export default function HitachiManagement() {
               setAppliedRentalFilters(rentalInitialFilters);
             }}
           >
-            <FilterField>
-              <TextField
-                select
-                label="Status"
-                fullWidth
-                size="small"
-                value={rentalFilters.status ?? ''}
-                onChange={(e) => setRentalFilters({ ...rentalFilters, status: e.target.value })}
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="booked">Booked</MenuItem>
-                <MenuItem value="running">Running</MenuItem>
-                <MenuItem value="completed">Completed</MenuItem>
-                <MenuItem value="cancelled">Cancelled</MenuItem>
-              </TextField>
-            </FilterField>
             <FilterField>
               <TextField
                 select
@@ -606,14 +555,6 @@ export default function HitachiManagement() {
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField label="Operator Name" fullWidth value={rentalForm.operator_name} onChange={(e) => setRentalForm({ ...rentalForm, operator_name: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField label="Status" select fullWidth value={rentalForm.status} onChange={(e) => setRentalForm({ ...rentalForm, status: e.target.value })}>
-                <MenuItem value="booked">Booked</MenuItem>
-                <MenuItem value="running">Running</MenuItem>
-                <MenuItem value="completed">Completed</MenuItem>
-                <MenuItem value="cancelled">Cancelled</MenuItem>
-              </TextField>
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField label="Estimated Total" fullWidth value={formatCurrency(estimatedTotal)} slotProps={{ input: { readOnly: true } }} />
