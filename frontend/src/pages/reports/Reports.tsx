@@ -168,10 +168,10 @@ export default function Reports() {
   const formatSummaryValue = (item: ReportSummaryItem) => {
     if (typeof item.value === 'string') return item.value;
     const label = item.label.toLowerCase();
-    if (/\b(trips|customers|records|categories|trucks|used)\b/.test(label) && !/(freight|billed|expense|profit|amount|salary|revenue)/.test(label)) {
+    if (/\b(trips|customers|records|categories|trucks|used)\b/.test(label) && !/(freight|ton|billed|expense|profit|amount|salary|revenue)/.test(label)) {
       return item.value;
     }
-    const currencyKeywords = ['total', 'revenue', 'profit', 'freight', 'expense', 'billed', 'outstanding', 'salary', 'net', 'paid'];
+    const currencyKeywords = ['total', 'revenue', 'profit', 'freight', 'ton', 'expense', 'billed', 'outstanding', 'salary', 'net', 'paid'];
     if (typeof item.value === 'number' && currencyKeywords.some((kw) => label.includes(kw))) {
       return formatCurrency(item.value);
     }

@@ -254,11 +254,31 @@ export interface Salary {
   driver?: Driver;
 }
 
+export interface SalaryAdvance {
+  id: number;
+  driver_id: number;
+  amount: number;
+  advance_date: string;
+  remarks?: string | null;
+  status?: string;
+  driver?: Driver;
+}
+
+export interface SalaryReconciliationRow {
+  driver_id: number;
+  driver_name: string;
+  total_trip_salary: number;
+  total_advanced_salary: number;
+  remaining_salary: number;
+}
+
 export interface Invoice {
   id: number;
   invoice_number: string;
   customer_id: number;
   trip_id?: number | null;
+  trip_ids?: number[];
+  billing_month?: string | null;
   hitachi_rental_id?: number | null;
   invoice_date: string;
   due_date?: string | null;
@@ -273,9 +293,24 @@ export interface Invoice {
   payment_status: 'pending' | 'paid' | 'partial' | 'overdue';
   paid_amount?: number;
   notes?: string;
+  extra_charges?: InvoiceExtraCharge[];
   customer?: Customer;
   trip?: Trip;
+  trips?: Trip[];
   hitachi_rental?: HitachiRental;
+}
+
+export interface InvoiceExtraCharge {
+  description: string;
+  amount: number;
+}
+
+export interface MonthlyInvoicePreview {
+  month: string;
+  customer_id: number;
+  trips: Trip[];
+  trip_count: number;
+  subtotal: number;
 }
 
 export interface DashboardStats {

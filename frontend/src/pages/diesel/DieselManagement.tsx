@@ -120,9 +120,9 @@ export default function DieselManagement() {
             params: buildFilterParams(appliedIssueFilters),
           }),
           api.get<DieselLedgerEntry[]>('/diesel/ledger', { params: buildFilterParams(appliedLedgerFilters) }),
-          fetchList<Truck>('/trucks'),
-          fetchList<HitachiMachine>('/hitachi-machines'),
-          fetchList<Trip>('/trips', { per_page: 100 }),
+          fetchList<Truck>('/trucks', { per_page: 500 }),
+          fetchList<HitachiMachine>('/hitachi-machines', { per_page: 500 }),
+          fetchList<Trip>('/trips', { per_page: 500 }),
           api.get<AvailablePurchase[]>('/diesel/available-purchases'),
           api.get<{ diesel_default_price?: number }>('/settings').catch(() => ({ data: {} })),
         ]);

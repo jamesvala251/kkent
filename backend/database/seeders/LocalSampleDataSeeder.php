@@ -8,6 +8,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\HitachiMachine;
 use App\Models\HitachiRental;
+use App\Models\SalaryAdvance;
 use App\Models\Trip;
 use App\Models\Truck;
 use Illuminate\Database\Seeder;
@@ -33,6 +34,7 @@ class LocalSampleDataSeeder extends Seeder
         $this->seedTrips($customers, $trucks, $drivers);
         $this->seedHitachiRentals($customers, $machines);
         $this->seedExpenses($customers);
+        $this->seedSalaryAdvances($drivers);
 
         $this->command?->info('Local sample data ready:');
         $this->command?->info('  Customers: '.Customer::count());
@@ -42,6 +44,7 @@ class LocalSampleDataSeeder extends Seeder
         $this->command?->info('  Hitachi machines: '.HitachiMachine::count());
         $this->command?->info('  Hitachi rentals: '.HitachiRental::count());
         $this->command?->info('  Expenses: '.Expense::count());
+        $this->command?->info('  Salary advances: '.SalaryAdvance::count());
         $this->command?->info('Use customers like "Shree Construction" / "Dwarka Logistics" to test invoice trip filtering.');
     }
 
@@ -489,6 +492,32 @@ class LocalSampleDataSeeder extends Seeder
                 ],
                 [
                     'description' => 'Sample site expense linked to Hitachi rental HRE-SAMPLE-001',
+                ]
+            );
+        }
+    }
+
+    private function seedSalaryAdvances(array $drivers): void
+    {
+        $defs = [
+            [0, 3, 3000, 'Gpay'],
+            [0, 10, 6000, 'Cash'],
+            [1, 2, 5000, 'Bank transfer'],
+            [1, 18, 2500, 'Gpay'],
+            [2, 5, 4000, 'Advance'],
+        ];
+
+        foreach ($defs as [$driverIndex, $daysAgo, $amount, $remarks]) {
+            $driver = $drivers[$driverIndex] ?? $drivers[0];
+            SalaryAdvance::firstOrCreate(
+                [
+                    'driver_id' => $driver->id,
+                    'advance_date' => now()->subDays($daysAgo)->toDateString(),
+                    'amount' => $amount,
+                ],
+                [
+                    'remarks' => $remarks,
+                    'status' => 'pending',
                 ]
             );
         }

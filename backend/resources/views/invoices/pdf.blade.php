@@ -41,7 +41,7 @@
         </div>
     </div>
 
-    <h2>Tax Invoice</h2>
+    <h2>{{ ((float) $invoice->cgst_rate + (float) $invoice->sgst_rate + (float) $invoice->igst_rate) > 0 ? 'Tax Invoice' : 'Invoice' }}</h2>
     <p><strong>Invoice No:</strong> {{ $invoice->invoice_number }}</p>
     <p><strong>Date:</strong> {{ $invoice->invoice_date->format('d M Y') }}</p>
     <p><strong>Due Date:</strong> {{ $invoice->due_date?->format('d M Y') ?? 'N/A' }}</p>
@@ -62,39 +62,71 @@
             </tr>
         </thead>
         <tbody>
+            @if($invoice->hitachiRental)
             <tr>
                 <td>
-                    @if($invoice->hitachiRental)
-                        Hitachi Rental — {{ $invoice->hitachiRental->rental_number }}
-                        @if($invoice->hitachiRental->hitachi)
-                            ({{ $invoice->hitachiRental->hitachi->machine_number }})
-                        @endif
-                        <br>
-                        <small>
-                            Billing: {{ ucfirst($invoice->hitachiRental->billing_type) }}
-                            @if($invoice->hitachiRental->billing_type === 'hourly')
-                                · {{ number_format((float) $invoice->hitachiRental->hours, 2) }} hrs
-                            @elseif($invoice->hitachiRental->billing_type === 'daily')
-                                · {{ number_format((float) $invoice->hitachiRental->days, 2) }} days
-                            @elseif($invoice->hitachiRental->billing_type === 'monthly')
-                                · {{ number_format((float) $invoice->hitachiRental->months, 2) }} months
-                            @endif
-                            @if($invoice->hitachiRental->site_location)
-                                · Site: {{ $invoice->hitachiRental->site_location }}
-                            @endif
-                            · {{ $invoice->hitachiRental->start_date?->format('d M Y') }}
-                            @if($invoice->hitachiRental->end_date)
-                                → {{ $invoice->hitachiRental->end_date->format('d M Y') }}
-                            @endif
-                        </small>
-                    @elseif($invoice->trip)
-                        Transport Services — Trip {{ $invoice->trip->trip_number }}
-                    @else
-                        Transport / Equipment Services
+                    Hitachi Rental — {{ $invoice->hitachiRental->rental_number }}
+                    @if($invoice->hitachiRental->hitachi)
+                        ({{ $invoice->hitachiRental->hitachi->machine_number }})
                     @endif
+                    <br>
+                    <small>
+                        Billing: {{ ucfirst($invoice->hitachiRental->billing_type) }}
+                        @if($invoice->hitachiRental->billing_type === 'hourly')
+                            · {{ number_format((float) $invoice->hitachiRental->hours, 2) }} hrs
+                        @elseif($invoice->hitachiRental->billing_type === 'daily')
+                            · {{ number_format((float) $invoice->hitachiRental->days, 2) }} days
+                        @elseif($invoice->hitachiRental->billing_type === 'monthly')
+                            · {{ number_format((float) $invoice->hitachiRental->months, 2) }} months
+                        @endif
+                        @if($invoice->hitachiRental->site_location)
+                            · Site: {{ $invoice->hitachiRental->site_location }}
+                        @endif
+                        · {{ $invoice->hitachiRental->start_date?->format('d M Y') }}
+                        @if($invoice->hitachiRental->end_date)
+                            → {{ $invoice->hitachiRental->end_date->format('d M Y') }}
+                        @endif
+                    </small>
                 </td>
+                <td>₹{{ number_format((float) $invoice->hitachiRental->total_amount, 2) }}</td>
+            </tr>
+            @elseif($invoice->trips && $invoice->trips->count())
+                @if($invoice->billing_month)
+                <tr>
+                    <td colspan="2"><strong>Transport services — {{ \Carbon\Carbon::createFromFormat('Y-m-d', $invoice->billing_month.'-01')->format('F Y') }} ({{ $invoice->trips->count() }} trips)</strong></td>
+                </tr>
+                @endif
+                @foreach($invoice->trips as $trip)
+                <tr>
+                    <td>
+                        Trip {{ $trip->trip_number }}
+                        @if($trip->start_date)
+                            · {{ $trip->start_date->format('d M Y') }}
+                        @endif
+                        @if($trip->from_location || $trip->to_location)
+                            <br><small>{{ $trip->from_location ?: '-' }} → {{ $trip->to_location ?: '-' }}</small>
+                        @endif
+                    </td>
+                    <td>₹{{ number_format($trip->billableAmount(), 2) }}</td>
+                </tr>
+                @endforeach
+            @elseif($invoice->trip)
+            <tr>
+                <td>Transport Services — Trip {{ $invoice->trip->trip_number }}</td>
+                <td>₹{{ number_format($invoice->trip->billableAmount(), 2) }}</td>
+            </tr>
+            @elseif(! $invoice->extraChargeLines())
+            <tr>
+                <td>Transport / Equipment Services</td>
                 <td>₹{{ number_format($invoice->subtotal, 2) }}</td>
             </tr>
+            @endif
+            @foreach($invoice->extraChargeLines() as $charge)
+            <tr>
+                <td>{{ $charge['description'] }}</td>
+                <td>₹{{ number_format($charge['amount'], 2) }}</td>
+            </tr>
+            @endforeach
         </tbody>
     </table>
 

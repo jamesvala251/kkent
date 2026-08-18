@@ -60,7 +60,7 @@ export default function DriverForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id && id !== 'new');
-  const [loadingData, setLoadingData] = useState(isEdit);
+  const [loadingData, setLoadingData] = useState(true);
   const [trucks, setTrucks] = useState<Truck[]>([]);
 
   const {
@@ -82,13 +82,16 @@ export default function DriverForm() {
   const salaryType = watch('salary_type');
 
   useEffect(() => {
-    fetchList<Truck>('/trucks').then(setTrucks);
-  }, []);
+    let cancelled = false;
 
-  useEffect(() => {
-    if (isEdit && id) {
-      setLoadingData(true);
-      fetchOne<Driver>('/drivers', id).then((data) => {
+    const load = async () => {
+      const truckList = await fetchList<Truck>('/trucks', { per_page: 500 });
+      if (cancelled) return;
+      setTrucks(truckList);
+
+      if (isEdit && id) {
+        const data = await fetchOne<Driver>('/drivers', id);
+        if (cancelled) return;
         if (data) {
           reset({
             name: data.name ?? '',
@@ -108,10 +111,18 @@ export default function DriverForm() {
             assigned_truck_id: data.assigned_truck_id ?? undefined,
             status: data.status ?? 'active',
           });
+        } else {
+          toast.error('Failed to load driver');
         }
-        setLoadingData(false);
-      });
-    }
+      }
+
+      if (!cancelled) setLoadingData(false);
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isEdit, reset]);
 
   const onSubmit = async (data: DriverFormData) => {
@@ -223,6 +234,7 @@ export default function DriverForm() {
                   select
                   fullWidth
                   margin="normal"
+                  value={watch('assigned_truck_id') ?? ''}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   <MenuItem value="">None</MenuItem>
@@ -247,6 +259,7 @@ export default function DriverForm() {
                   select
                   fullWidth
                   margin="normal"
+                  value={salaryType ?? 'monthly'}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   <MenuItem value="monthly">Monthly</MenuItem>
@@ -287,6 +300,7 @@ export default function DriverForm() {
                   select
                   fullWidth
                   margin="normal"
+                  value={watch('status') ?? 'active'}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   <MenuItem value="active">Active</MenuItem>

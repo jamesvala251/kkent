@@ -19,8 +19,7 @@ import TripForm from '../pages/trips/TripForm';
 import ExpenseList from '../pages/expenses/ExpenseList';
 import ExpenseForm from '../pages/expenses/ExpenseForm';
 import DieselManagement from '../pages/diesel/DieselManagement';
-import SalaryList from '../pages/salary/SalaryList';
-import SalaryForm from '../pages/salary/SalaryForm';
+import SalaryManagement from '../pages/salary/SalaryManagement';
 import InvoiceList from '../pages/invoices/InvoiceList';
 import InvoiceForm from '../pages/invoices/InvoiceForm';
 import ChallanManagement from '../pages/challan/ChallanManagement';
@@ -78,9 +77,9 @@ export default function AppRoutes() {
         <Route path="expenses/new" element={<ExpenseForm />} />
         <Route path="expenses/:id/edit" element={<ExpenseForm />} />
         <Route path="diesel" element={<DieselManagement />} />
-        <Route path="salary" element={<SalaryList />} />
-        <Route path="salary/new" element={<SalaryForm />} />
-        <Route path="salary/:id/edit" element={<SalaryForm />} />
+        <Route path="salary" element={<SalaryManagement />} />
+        <Route path="salary/new" element={<Navigate to="/salary" replace />} />
+        <Route path="salary/:id/edit" element={<Navigate to="/salary" replace />} />
         <Route path="invoices" element={<InvoiceList />} />
         <Route path="invoices/new" element={<InvoiceForm />} />
         <Route path="invoices/:id/edit" element={<InvoiceForm />} />

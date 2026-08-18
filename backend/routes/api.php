@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\SalaryAdvanceController;
 use App\Http\Controllers\Api\SalaryController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SettingController;
@@ -75,6 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('issues/{dieselIssue}', [DieselController::class, 'destroyIssue']);
     });
     Route::apiResource('salaries', SalaryController::class);
+    Route::get('salary-advances/reconcile', [SalaryAdvanceController::class, 'reconcile']);
+    Route::apiResource('salary-advances', SalaryAdvanceController::class);
+    Route::get('invoices/preview-monthly', [InvoiceController::class, 'previewMonthly']);
     Route::apiResource('invoices', InvoiceController::class);
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
 

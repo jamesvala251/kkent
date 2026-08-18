@@ -61,6 +61,7 @@ export default function TruckForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<TruckFormData>({
     resolver: yupResolver(schema) as Resolver<TruckFormData>,
@@ -92,6 +93,8 @@ export default function TruckForm() {
             gps_number: data.gps_number ?? '',
             current_km: data.current_km != null ? Number(data.current_km) : 0,
           });
+        } else {
+          toast.error('Failed to load truck');
         }
         setLoadingData(false);
       });
@@ -167,6 +170,7 @@ export default function TruckForm() {
                   select
                   fullWidth
                   margin="normal"
+                  value={watch('fuel_type') ?? 'diesel'}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   <MenuItem value="diesel">Diesel</MenuItem>

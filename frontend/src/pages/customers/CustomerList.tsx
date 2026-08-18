@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Chip, IconButton, MenuItem, TextField } from '@mui/material';
+import { Button, IconButton, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,7 +14,7 @@ import { buildFilterParams, type FilterValues } from '../../utils/listFilters';
 import type { Customer } from '../../types';
 import { toast } from 'react-toastify';
 
-const initialFilters: FilterValues = { status: '', search: '' };
+const initialFilters: FilterValues = { search: '' };
 
 export default function CustomerList() {
   const navigate = useNavigate();
@@ -57,11 +57,6 @@ export default function CustomerList() {
     { id: 'mobile', label: 'Mobile' },
     { id: 'city', label: 'City' },
     {
-      id: 'status',
-      label: 'Status',
-      format: (row) => <Chip label={row.status} size="small" color={row.status === 'active' ? 'success' : 'default'} />,
-    },
-    {
       id: 'actions',
       label: 'Actions',
       align: 'right',
@@ -100,20 +95,6 @@ export default function CustomerList() {
           setAppliedFilters(initialFilters);
         }}
       >
-        <FilterField>
-          <TextField
-            select
-            label="Status"
-            fullWidth
-            size="small"
-            value={filters.status ?? ''}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </TextField>
-        </FilterField>
         <FilterField size={{ xs: 12, sm: 6, md: 4 }}>
           <TextField
             label="Search"

@@ -21,6 +21,7 @@ const toNumber = (value: unknown, fallback?: number) => {
 
 const schema = yup.object({
   machine_number: yup.string().required('Machine number is required'),
+  registration_number: yup.string(),
   model: yup.string(),
   owner: yup.string(),
   engine_number: yup.string(),
@@ -37,6 +38,7 @@ const schema = yup.object({
 
 interface HitachiFormData {
   machine_number: string;
+  registration_number?: string;
   model?: string;
   owner?: string;
   engine_number?: string;
@@ -63,6 +65,7 @@ export default function HitachiForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<HitachiFormData>({
     resolver: yupResolver(schema) as Resolver<HitachiFormData>,
@@ -83,6 +86,7 @@ export default function HitachiForm() {
       if (data) {
         reset({
           machine_number: data.machine_number ?? '',
+          registration_number: data.registration_number ?? '',
           model: data.model ?? '',
           owner: data.owner ?? '',
           engine_number: data.engine_number ?? '',
@@ -148,10 +152,19 @@ export default function HitachiForm() {
                 <TextField {...register('machine_number')} label="Machine Number" fullWidth error={!!errors.machine_number} helperText={errors.machine_number?.message} />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
+                <TextField {...register('registration_number')} label="Registration Number" fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('model')} label="Model" fullWidth />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('owner')} label="Owner" fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField {...register('engine_number')} label="Engine Number" fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField {...register('chassis_number')} label="Chassis Number" fullWidth />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('bucket_capacity')} label="Bucket Capacity" fullWidth />
@@ -166,7 +179,7 @@ export default function HitachiForm() {
                 <TextField {...register('current_km')} label="Current KM" type="number" fullWidth />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('fuel_type')} label="Fuel Type" select fullWidth>
+                <TextField {...register('fuel_type')} label="Fuel Type" select fullWidth value={watch('fuel_type') ?? 'diesel'}>
                   <MenuItem value="diesel">Diesel</MenuItem>
                   <MenuItem value="petrol">Petrol</MenuItem>
                   <MenuItem value="cng">CNG</MenuItem>

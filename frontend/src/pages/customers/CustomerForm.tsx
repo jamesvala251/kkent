@@ -57,6 +57,7 @@ export default function CustomerForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormData>({
     resolver: yupResolver(schema) as Resolver<CustomerFormData>,
@@ -84,6 +85,8 @@ export default function CustomerForm() {
             payment_terms: data.payment_terms ?? '',
             status: data.status ?? 'active',
           });
+        } else {
+          toast.error('Failed to load customer');
         }
         setLoadingData(false);
       });
@@ -169,6 +172,7 @@ export default function CustomerForm() {
                   select
                   fullWidth
                   margin="normal"
+                  value={watch('status') ?? 'active'}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   <MenuItem value="active">Active</MenuItem>

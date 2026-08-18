@@ -1,10 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Box, Button, Card, CardContent, Divider, MenuItem, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Divider,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
 import Grid from '@mui/material/Grid2';
+import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DeleteIcon from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
 import { useForm, useWatch, type FieldErrors, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -14,8 +33,8 @@ import PageHeader from '../../components/common/PageHeader';
 import InvoiceLetterhead from '../../components/common/InvoiceLetterhead';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
 import api from '../../services/api';
-import { createItem, downloadInvoicePdf, fetchList, fetchOne, formatCurrency, updateItem } from '../../services/resourceService';
-import type { Customer, HitachiRental, Invoice, Trip } from '../../types';
+import { createItem, downloadInvoicePdf, fetchList, fetchOne, formatCurrency, formatDate, updateItem } from '../../services/resourceService';
+import type { Customer, HitachiRental, Invoice, InvoiceExtraCharge, MonthlyInvoicePreview, Trip } from '../../types';
 
 const toNumber = (value: unknown, fallback?: number) => {
   if (value === '' || value === null || value === undefined) return fallback;
@@ -39,6 +58,7 @@ const schema = yup.object({
   customer_id: requiredId('Customer'),
   trip_id: optionalId(),
   hitachi_rental_id: optionalId(),
+  billing_month: yup.string().optional(),
   invoice_date: yup.string().required('Invoice date is required'),
   due_date: yup.string(),
   subtotal: optionalNumber(),
@@ -53,6 +73,7 @@ interface InvoiceFormData {
   customer_id: number;
   trip_id?: number | null;
   hitachi_rental_id?: number | null;
+  billing_month?: string;
   invoice_date: string;
   due_date?: string;
   subtotal?: number;
@@ -92,6 +113,15 @@ const billingLabel = (rental: HitachiRental) => {
   return `${rental.months ?? 0} mo`;
 };
 
+const tripAmount = (trip: Trip) => {
+  const total = Number(trip.total_freight);
+  return total > 0 ? total : Number(trip.freight || 0);
+};
+
+const tripDateValue = (value?: string) => (value ? value.split('T')[0] : '');
+
+const emptyCharge = (): InvoiceExtraCharge => ({ description: '', amount: 0 });
+
 export default function InvoiceForm() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -100,8 +130,10 @@ export default function InvoiceForm() {
   const [loadingData, setLoadingData] = useState(isEdit || Boolean(searchParams.get('hitachi_rental_id')));
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
   const [rentals, setRentals] = useState<HitachiRental[]>([]);
+  const [monthTrips, setMonthTrips] = useState<Trip[]>([]);
+  const [extraCharges, setExtraCharges] = useState<InvoiceExtraCharge[]>([emptyCharge()]);
+  const [loadingTrips, setLoadingTrips] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [companySettings, setCompanySettings] = useState({
     company_name: 'KK Enterprise',
@@ -123,9 +155,10 @@ export default function InvoiceForm() {
     defaultValues: {
       invoice_date: dayjs().format('YYYY-MM-DD'),
       due_date: dayjs().add(15, 'day').format('YYYY-MM-DD'),
+      billing_month: dayjs().format('YYYY-MM'),
       subtotal: 0,
-      cgst_rate: 9,
-      sgst_rate: 9,
+      cgst_rate: 0,
+      sgst_rate: 0,
       igst_rate: 0,
       paid_amount: 0,
       trip_id: null,
@@ -134,25 +167,38 @@ export default function InvoiceForm() {
   });
 
   const watched = useWatch({ control });
-  const gst = useMemo(() => calcTotals(watched), [watched]);
-
   const selectedCustomerId = Number(watched.customer_id) || 0;
-
-  const customerTrips = useMemo(() => {
-    if (!selectedCustomerId) return [];
-    return trips.filter((t) => Number(t.customer_id) === selectedCustomerId);
-  }, [trips, selectedCustomerId]);
+  const billingMonth = watched.billing_month || dayjs().format('YYYY-MM');
+  const hasRental = Boolean(watched.hitachi_rental_id);
 
   const customerRentals = useMemo(() => {
     if (!selectedCustomerId) return [];
     return rentals.filter((r) => Number(r.customer_id) === selectedCustomerId);
   }, [rentals, selectedCustomerId]);
 
+  const selectedRental = customerRentals.find((r) => r.id === Number(watched.hitachi_rental_id));
+
+  const tripTotal = useMemo(
+    () => monthTrips.reduce((sum, trip) => sum + tripAmount(trip), 0),
+    [monthTrips],
+  );
+  const extraTotal = useMemo(
+    () => extraCharges.reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
+    [extraCharges],
+  );
+  const rentalTotal = hasRental ? Number(selectedRental?.total_amount) || 0 : 0;
+  const baseAmount = hasRental ? rentalTotal : tripTotal;
+  const subtotal = baseAmount + extraTotal;
+  const gst = useMemo(
+    () => calcTotals({ ...watched, subtotal }),
+    [watched, subtotal],
+  );
+
   const applyRental = (rental: HitachiRental) => {
     setValue('hitachi_rental_id', rental.id);
     setValue('trip_id', null);
     setValue('customer_id', rental.customer_id);
-    setValue('subtotal', Number(rental.total_amount) || 0);
+    setMonthTrips([]);
     const noteParts = [
       `Hitachi rental ${rental.rental_number}`,
       rental.hitachi?.machine_number ? `Machine ${rental.hitachi.machine_number}` : null,
@@ -163,13 +209,11 @@ export default function InvoiceForm() {
 
   useEffect(() => {
     Promise.all([
-      fetchList<Customer>('/customers'),
-      fetchList<Trip>('/trips', { per_page: 100 }),
-      fetchList<HitachiRental>('/hitachi/rentals', { per_page: 100 }),
+      fetchList<Customer>('/customers', { per_page: 500 }),
+      fetchList<HitachiRental>('/hitachi/rentals', { per_page: 500 }),
       api.get<typeof companySettings>('/settings'),
-    ]).then(([c, t, r, settingsRes]) => {
+    ]).then(([c, r, settingsRes]) => {
       setCustomers(c);
-      setTrips(t);
       setRentals(r);
       if (settingsRes.data) {
         setCompanySettings((prev) => ({ ...prev, ...settingsRes.data }));
@@ -200,11 +244,21 @@ export default function InvoiceForm() {
     fetchOne<Invoice>('/invoices', id).then((data) => {
       if (data) {
         const subtotal = Number(data.subtotal);
+        const linkedTrips = data.trips?.length ? data.trips : (data.trip ? [data.trip] : []);
+        const month =
+          data.billing_month
+          || (linkedTrips[0]?.start_date ? dayjs(tripDateValue(linkedTrips[0].start_date)).format('YYYY-MM') : dayjs().format('YYYY-MM'));
         setInvoiceNumber(data.invoice_number);
+        setMonthTrips(linkedTrips);
+        const loadedCharges = (data.extra_charges || [])
+          .filter((row) => row.description || Number(row.amount) > 0)
+          .map((row) => ({ description: row.description, amount: Number(row.amount) || 0 }));
+        setExtraCharges(loadedCharges.length ? loadedCharges : [emptyCharge()]);
         reset({
           customer_id: data.customer_id,
           trip_id: data.trip_id ?? null,
           hitachi_rental_id: data.hitachi_rental_id ?? null,
+          billing_month: month,
           invoice_date: data.invoice_date?.split('T')[0] ?? '',
           due_date: data.due_date?.split('T')[0] ?? '',
           subtotal,
@@ -218,6 +272,57 @@ export default function InvoiceForm() {
       setLoadingData(false);
     });
   }, [id, isEdit, reset]);
+
+  useEffect(() => {
+    if (loadingData) return;
+    if (hasRental) {
+      setMonthTrips([]);
+      return;
+    }
+    if (!selectedCustomerId || !billingMonth) {
+      setMonthTrips([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingTrips(true);
+    api
+      .get<MonthlyInvoicePreview>('/invoices/preview-monthly', {
+        params: {
+          customer_id: selectedCustomerId,
+          month: billingMonth,
+          ...(isEdit && id ? { exclude_invoice_id: id } : {}),
+        },
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const preview = res.data;
+        setMonthTrips(preview.trips || []);
+        if (!isEdit) {
+          const monthLabel = dayjs(`${billingMonth}-01`).format('MMMM YYYY');
+          const count = preview.trip_count || 0;
+          setValue(
+            'notes',
+            count > 0
+              ? `Monthly trips — ${monthLabel} (${count} trip${count === 1 ? '' : 's'})`
+              : '',
+          );
+          const monthEnd = dayjs(`${billingMonth}-01`).endOf('month');
+          setValue('invoice_date', monthEnd.format('YYYY-MM-DD'));
+          setValue('due_date', monthEnd.add(15, 'day').format('YYYY-MM-DD'));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMonthTrips([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTrips(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCustomerId, billingMonth, hasRental, isEdit, id, setValue, loadingData]);
 
   const onInvalid = (formErrors: FieldErrors<InvoiceFormData>) => {
     const firstError = Object.values(formErrors).find((e) => e?.message);
@@ -238,14 +343,17 @@ export default function InvoiceForm() {
   const onSubmit = async (data: InvoiceFormData) => {
     const payload: Partial<Invoice> = {
       customer_id: data.customer_id,
-      trip_id: data.hitachi_rental_id ? null : (data.trip_id ?? null),
+      trip_id: null,
+      trip_ids: data.hitachi_rental_id ? [] : monthTrips.map((trip) => trip.id),
+      billing_month: data.hitachi_rental_id ? null : billingMonth,
       hitachi_rental_id: data.hitachi_rental_id ?? null,
       invoice_date: data.invoice_date,
       due_date: data.due_date || null,
-      subtotal: data.subtotal,
-      cgst_rate: data.cgst_rate ?? 0,
-      sgst_rate: data.sgst_rate ?? 0,
-      igst_rate: data.igst_rate ?? 0,
+      subtotal,
+      extra_charges: extraCharges.filter((row) => row.description.trim() && Number(row.amount) > 0),
+      cgst_rate: Number(data.cgst_rate) || 0,
+      sgst_rate: Number(data.sgst_rate) || 0,
+      igst_rate: Number(data.igst_rate) || 0,
       paid_amount: data.paid_amount,
       notes: data.notes || undefined,
     };
@@ -271,7 +379,7 @@ export default function InvoiceForm() {
     <Box>
       <PageHeader
         title={isEdit ? 'Edit Invoice' : 'Create Invoice'}
-        subtitle="Link a trip or Hitachi rental — GST % calculates tax automatically"
+        subtitle="Select a customer and month to bill all trips together, or link a Hitachi rental"
         breadcrumbs={[{ label: 'Invoices', to: '/invoices' }, { label: isEdit ? 'Edit' : 'New' }]}
         action={
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -318,10 +426,6 @@ export default function InvoiceForm() {
                   {...register('customer_id', {
                     onChange: (e) => {
                       const nextCustomerId = Number(e.target.value) || 0;
-                      const linkedTrip = trips.find((t) => t.id === Number(watched.trip_id));
-                      if (linkedTrip && Number(linkedTrip.customer_id) !== nextCustomerId) {
-                        setValue('trip_id', null);
-                      }
                       const linkedRental = rentals.find((r) => r.id === Number(watched.hitachi_rental_id));
                       if (linkedRental && Number(linkedRental.customer_id) !== nextCustomerId) {
                         setValue('hitachi_rental_id', null);
@@ -331,6 +435,7 @@ export default function InvoiceForm() {
                   label="Customer"
                   select
                   fullWidth
+                  value={watched.customer_id ?? ''}
                   error={!!errors.customer_id}
                   helperText={errors.customer_id?.message}
                 >
@@ -339,7 +444,18 @@ export default function InvoiceForm() {
                   ))}
                 </TextField>
               </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <TextField
+                  {...register('billing_month')}
+                  label="Billing Month"
+                  type="month"
+                  fullWidth
+                  disabled={hasRental}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  helperText={hasRental ? 'Clear Hitachi rental to bill monthly trips' : 'All trips in this month are included'}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
                   select
                   fullWidth
@@ -358,53 +474,13 @@ export default function InvoiceForm() {
                   helperText={
                     !selectedCustomerId
                       ? 'Select a customer to see related Hitachi rentals'
-                      : 'Selecting a rental fills subtotal'
+                      : 'Selecting a rental bills equipment instead of trips'
                   }
                 >
                   <MenuItem value="">None</MenuItem>
                   {customerRentals.map((r) => (
                     <MenuItem key={r.id} value={r.id}>
                       {r.rental_number} · {r.hitachi?.machine_number ?? 'Machine'} · {billingLabel(r)} · {formatCurrency(Number(r.total_amount))}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Trip (Optional)"
-                  value={watched.trip_id ?? ''}
-                  disabled={!selectedCustomerId || Boolean(watched.hitachi_rental_id)}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setValue('trip_id', value ? Number(value) : null);
-                    if (value) {
-                      setValue('hitachi_rental_id', null);
-                      const trip = trips.find((t) => t.id === Number(value));
-                      if (trip?.total_freight != null && Number(trip.total_freight) > 0) {
-                        setValue('subtotal', Number(trip.total_freight));
-                      }
-                    }
-                  }}
-                  helperText={
-                    watched.hitachi_rental_id
-                      ? 'Clear Hitachi rental to link a trip'
-                      : !selectedCustomerId
-                        ? 'Select a customer to see related trips'
-                        : customerTrips.length === 0
-                          ? 'No trips found for this customer'
-                          : ' '
-                  }
-                >
-                  <MenuItem value="">None</MenuItem>
-                  {customerTrips.map((t) => (
-                    <MenuItem key={t.id} value={t.id}>
-                      {t.trip_number}
-                      {t.from_location || t.to_location
-                        ? ` · ${t.from_location || '-'} → ${t.to_location || '-'}`
-                        : ''}
-                      {t.total_freight != null ? ` · ${formatCurrency(Number(t.total_freight))}` : ''}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -424,13 +500,166 @@ export default function InvoiceForm() {
               </Grid>
             </Grid>
 
+            {!hasRental && (
+              <>
+                <Divider sx={{ my: 3 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Trips in {dayjs(`${billingMonth}-01`).format('MMMM YYYY')}
+                  </Typography>
+                  {loadingTrips && <CircularProgress size={18} />}
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {selectedCustomerId
+                    ? 'Every uninvoiced trip for this customer in the selected month is added to the invoice.'
+                    : 'Select a customer to load trips for the month.'}
+                </Typography>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Trip #</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Route</TableCell>
+                      <TableCell>Truck / Driver</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {monthTrips.map((trip) => (
+                      <TableRow key={trip.id}>
+                        <TableCell>{trip.trip_number}</TableCell>
+                        <TableCell>{formatDate(tripDateValue(trip.start_date))}</TableCell>
+                        <TableCell>
+                          {trip.from_location || trip.to_location
+                            ? `${trip.from_location || '-'} → ${trip.to_location || '-'}`
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {[trip.truck?.truck_number, trip.driver?.name].filter(Boolean).join(' · ') || '-'}
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(tripAmount(trip))}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!loadingTrips && monthTrips.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          {selectedCustomerId ? 'No uninvoiced trips for this customer in this month' : '—'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                  {monthTrips.length > 0 && (
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={4} sx={{ fontWeight: 700 }}>
+                          Total ({monthTrips.length} trip{monthTrips.length === 1 ? '' : 's'})
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {formatCurrency(monthTrips.reduce((sum, trip) => sum + tripAmount(trip), 0))}
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  )}
+                </Table>
+              </>
+            )}
+
+            <Divider sx={{ my: 3 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Extra charges / additional work
+              </Typography>
+              <Button
+                type="button"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setExtraCharges((rows) => [...rows, emptyCharge()]);
+                }}
+              >
+                Add extra charge
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Optional. Add loading, extra work, or any other charge after the trips.
+            </Typography>
+            {extraCharges.map((row, index) => (
+                <Grid container spacing={2} key={`extra-${index}`} sx={{ mb: 1 }}>
+                  <Grid size={{ xs: 12, md: 7 }}>
+                    <TextField
+                      label="Description"
+                      fullWidth
+                      value={row.description}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setExtraCharges((rows) => rows.map((item, i) => (i === index ? { ...item, description: value } : item)));
+                      }}
+                      placeholder="e.g. Extra loading, Sunday work"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      label="Amount (₹)"
+                      type="number"
+                      fullWidth
+                      value={row.amount || ''}
+                      onChange={(e) => {
+                        const value = Number(e.target.value) || 0;
+                        setExtraCharges((rows) => rows.map((item, i) => (i === index ? { ...item, amount: value } : item)));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 1 }} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <IconButton
+                      type="button"
+                      color="error"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setExtraCharges((rows) => (rows.length <= 1 ? [emptyCharge()] : rows.filter((_, i) => i !== index)));
+                      }}
+                      aria-label="Remove extra charge"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Grid>
+                </Grid>
+            ))}
+
             <Divider sx={{ my: 3 }} />
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }} gutterBottom>
-              Amount & GST (%)
+              Amount & tax (optional)
             </Typography>
             <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField {...register('subtotal')} label="Subtotal (₹)" type="number" fullWidth />
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  label={hasRental ? 'Rental amount (₹)' : 'Trips total (₹)'}
+                  value={formatCurrency(baseAmount)}
+                  fullWidth
+                  slotProps={{ input: { readOnly: true } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  label="Extra charges (₹)"
+                  value={formatCurrency(extraTotal)}
+                  fullWidth
+                  slotProps={{ input: { readOnly: true } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  label="Subtotal (₹)"
+                  value={formatCurrency(subtotal)}
+                  fullWidth
+                  slotProps={{ input: { readOnly: true } }}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
@@ -438,9 +667,10 @@ export default function InvoiceForm() {
                   label="CGST (%)"
                   type="number"
                   fullWidth
+                  placeholder="Optional"
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
                   InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
-                  helperText={`Tax amount: ${formatCurrency(gst.cgst)}`}
+                  helperText={Number(watched.cgst_rate) > 0 ? `Tax amount: ${formatCurrency(gst.cgst)}` : 'Optional'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
@@ -449,9 +679,10 @@ export default function InvoiceForm() {
                   label="SGST (%)"
                   type="number"
                   fullWidth
+                  placeholder="Optional"
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
                   InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
-                  helperText={`Tax amount: ${formatCurrency(gst.sgst)}`}
+                  helperText={Number(watched.sgst_rate) > 0 ? `Tax amount: ${formatCurrency(gst.sgst)}` : 'Optional'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
@@ -460,12 +691,13 @@ export default function InvoiceForm() {
                   label="IGST (%)"
                   type="number"
                   fullWidth
+                  placeholder="Optional"
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
                   InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
-                  helperText={`Tax amount: ${formatCurrency(gst.igst)} — use for inter-state`}
+                  helperText={Number(watched.igst_rate) > 0 ? `Tax amount: ${formatCurrency(gst.igst)}` : 'Optional — inter-state'}
                 />
               </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField label="Total Amount" value={formatCurrency(gst.total)} fullWidth slotProps={{ input: { readOnly: true } }} />
               </Grid>
               {isEdit && (
@@ -475,7 +707,7 @@ export default function InvoiceForm() {
               )}
               <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Intra-state: CGST + SGST (e.g. 9% + 9%). Inter-state: IGST only (e.g. 18%).
+                  Tax is optional. Leave CGST / SGST / IGST at 0 if not applicable.
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12 }}>
