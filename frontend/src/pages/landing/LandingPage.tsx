@@ -19,7 +19,6 @@ import ConstructionIcon from '@mui/icons-material/Construction';
 import RouteIcon from '@mui/icons-material/Route';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import PhoneIcon from '@mui/icons-material/Phone';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BadgeIcon from '@mui/icons-material/Badge';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -34,8 +33,6 @@ const CONTACT = {
     { number: '9924431627', display: 'Mo. 9924431627' },
   ],
   gstin: '24BQCPV9444A1ZU',
-  address: '1, Vadi Vistar, At. Mota Ashota, Ta. Kalyanpur, Dist. Devbhoomi Dwarka, Gujarat, 361305',
-  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=1+Vadi+Vistar+Mota+Ashota+Kalyanpur+Devbhoomi+Dwarka+Gujarat+361305',
 };
 
 function PhoneLinks({ centered = false }: { centered?: boolean }) {
@@ -431,8 +428,8 @@ export default function LandingPage() {
             </Typography>
           </RevealSection>
 
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 4 }}>
+          <Grid container spacing={3} justifyContent="center">
+            <Grid size={{ xs: 12, md: 5 }}>
               <RevealSection>
                 <Paper className="landing-card-hover" sx={{ p: 3.5, borderRadius: 3, height: '100%', textAlign: 'center' }}>
                   <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: 'primary.main', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
@@ -448,7 +445,7 @@ export default function LandingPage() {
                 </Paper>
               </RevealSection>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <RevealSection>
                 <Paper className="landing-card-hover" sx={{ p: 3.5, borderRadius: 3, height: '100%', textAlign: 'center' }}>
                   <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: '#ed6c02', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
@@ -463,32 +460,6 @@ export default function LandingPage() {
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     Registered under GST Act
                   </Typography>
-                </Paper>
-              </RevealSection>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <RevealSection>
-                <Paper className="landing-card-hover" sx={{ p: 3.5, borderRadius: 3, height: '100%', textAlign: 'center' }}>
-                  <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: '#2e7d32', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
-                    <LocationOnIcon />
-                  </Box>
-                  <Typography variant="h6" fontWeight={700} gutterBottom>
-                    Office Address
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                    {CONTACT.address}
-                  </Typography>
-                  <Button
-                    component="a"
-                    href={CONTACT.mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="small"
-                    sx={{ mt: 2 }}
-                    endIcon={<ArrowForwardIcon />}
-                  >
-                    Open in Maps
-                  </Button>
                 </Paper>
               </RevealSection>
             </Grid>
@@ -529,7 +500,7 @@ export default function LandingPage() {
 
       <Box sx={{ py: 3, bgcolor: '#0a1029', textAlign: 'center' }}>
         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-          © {new Date().getFullYear()} KK Enterprise · GSTIN {CONTACT.gstin} · {CONTACT.address.split(',')[0]}
+          © {new Date().getFullYear()} KK Enterprise · GSTIN {CONTACT.gstin}
         </Typography>
       </Box>
     </Box>

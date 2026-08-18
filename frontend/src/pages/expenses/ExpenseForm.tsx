@@ -13,7 +13,7 @@ import {
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useForm, type FieldErrors, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type FieldErrors, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import dayjs from 'dayjs';
@@ -78,7 +78,7 @@ export default function ExpenseForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id && id !== 'new');
-  const [loadingData, setLoadingData] = useState(isEdit);
+  const [loadingData, setLoadingData] = useState(true);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -91,6 +91,7 @@ export default function ExpenseForm() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ExpenseFormData>({
     resolver: yupResolver(schema) as Resolver<ExpenseFormData>,
@@ -100,42 +101,54 @@ export default function ExpenseForm() {
     },
   });
 
+  const watched = useWatch({ control });
+
   useEffect(() => {
-    Promise.all([
-      api.get<ExpenseCategory[]>('/expense-categories'),
-      fetchList<Truck>('/trucks'),
-      fetchList<Driver>('/drivers'),
-      fetchList<Trip>('/trips', { per_page: 100 }),
-      fetchList<HitachiRental>('/hitachi/rentals', { per_page: 100 }),
-    ]).then(([categoriesRes, t, d, tripList, rentalList]) => {
+    let cancelled = false;
+
+    const load = async () => {
+      const [categoriesRes, t, d, tripList, rentalList] = await Promise.all([
+        api.get<ExpenseCategory[]>('/expense-categories'),
+        fetchList<Truck>('/trucks', { per_page: 500 }),
+        fetchList<Driver>('/drivers', { per_page: 500 }),
+        fetchList<Trip>('/trips', { per_page: 500 }),
+        fetchList<HitachiRental>('/hitachi/rentals', { per_page: 500 }),
+      ]);
+      if (cancelled) return;
+
       setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
       setTrucks(t);
       setDrivers(d);
       setTrips(tripList);
       setHitachiRentals(rentalList);
-    });
-  }, []);
 
-  useEffect(() => {
-    if (!isEdit || !id) return;
-
-    setLoadingData(true);
-    fetchOne<Expense>('/expenses', id).then((data) => {
-      if (data) {
-        reset({
-          expense_date: data.expense_date?.split('T')[0] ?? '',
-          category_id: data.category_id,
-          amount: Number(data.amount),
-          description: data.description ?? '',
-          truck_id: data.truck_id ?? undefined,
-          driver_id: data.driver_id ?? undefined,
-          trip_id: data.trip_id ?? undefined,
-          hitachi_rental_id: data.hitachi_rental_id ?? undefined,
-        });
-        setExistingBillPath(data.bill_path ?? null);
+      if (isEdit && id) {
+        const data = await fetchOne<Expense>('/expenses', id);
+        if (cancelled) return;
+        if (data) {
+          reset({
+            expense_date: data.expense_date?.split('T')[0] ?? '',
+            category_id: data.category_id,
+            amount: Number(data.amount),
+            description: data.description ?? '',
+            truck_id: data.truck_id ?? undefined,
+            driver_id: data.driver_id ?? undefined,
+            trip_id: data.trip_id ?? undefined,
+            hitachi_rental_id: data.hitachi_rental_id ?? undefined,
+          });
+          setExistingBillPath(data.bill_path ?? null);
+        } else {
+          toast.error('Failed to load expense');
+        }
       }
-      setLoadingData(false);
-    });
+
+      if (!cancelled) setLoadingData(false);
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isEdit, reset]);
 
   const onInvalid = (formErrors: FieldErrors<ExpenseFormData>) => {
@@ -230,6 +243,7 @@ export default function ExpenseForm() {
                   label="Category"
                   select
                   fullWidth
+                  value={watched.category_id ?? ''}
                   error={!!errors.category_id}
                   helperText={errors.category_id?.message}
                 >
@@ -251,7 +265,7 @@ export default function ExpenseForm() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('truck_id')} label="Truck (Optional)" select fullWidth>
+                <TextField {...register('truck_id')} label="Truck (Optional)" select fullWidth value={watched.truck_id ?? ''}>
                   <MenuItem value="">None</MenuItem>
                   {trucks.map((truck) => (
                     <MenuItem key={truck.id} value={truck.id}>
@@ -261,7 +275,7 @@ export default function ExpenseForm() {
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('driver_id')} label="Driver (Optional)" select fullWidth>
+                <TextField {...register('driver_id')} label="Driver (Optional)" select fullWidth value={watched.driver_id ?? ''}>
                   <MenuItem value="">None</MenuItem>
                   {drivers.map((driver) => (
                     <MenuItem key={driver.id} value={driver.id}>
@@ -271,7 +285,7 @@ export default function ExpenseForm() {
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('trip_id')} label="Trip (Optional)" select fullWidth>
+                <TextField {...register('trip_id')} label="Trip (Optional)" select fullWidth value={watched.trip_id ?? ''}>
                   <MenuItem value="">None</MenuItem>
                   {trips.map((trip) => (
                     <MenuItem key={trip.id} value={trip.id}>
@@ -281,7 +295,7 @@ export default function ExpenseForm() {
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('hitachi_rental_id')} label="Hitachi Rental (Optional)" select fullWidth>
+                <TextField {...register('hitachi_rental_id')} label="Hitachi Rental (Optional)" select fullWidth value={watched.hitachi_rental_id ?? ''}>
                   <MenuItem value="">None</MenuItem>
                   {hitachiRentals.map((rental) => (
                     <MenuItem key={rental.id} value={rental.id}>

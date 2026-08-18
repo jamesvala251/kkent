@@ -363,8 +363,6 @@ class ReportService
                 'mobile' => $customer?->mobile ?? '-',
                 'trip_count' => $customerTrips->count(),
                 'total_freight' => round($customerTrips->sum('total_freight'), 2),
-                'total_expense' => round($customerTrips->sum('total_expense'), 2),
-                'total_profit' => round($customerTrips->sum('profit'), 2),
                 'total_billed' => round($customerInvoices->sum('total_amount'), 2),
                 'total_paid' => round($customerInvoices->sum('paid_amount'), 2),
                 'outstanding' => round($customerInvoices->sum(fn ($i) => $i->total_amount - $i->paid_amount), 2),
@@ -381,7 +379,7 @@ class ReportService
             'summary' => [
                 ['label' => 'Customers', 'value' => $grouped->count()],
                 ['label' => 'Total Trips', 'value' => $trips->count()],
-                ['label' => 'Total Freight', 'value' => round($trips->sum('total_freight'), 2)],
+                ['label' => 'Total Ton', 'value' => round($trips->sum('total_freight'), 2)],
                 ['label' => 'Total Billed', 'value' => round($invoices->sum('total_amount'), 2)],
                 ['label' => 'Outstanding', 'value' => round($invoices->sum(fn ($i) => $i->total_amount - $i->paid_amount), 2)],
             ],
@@ -389,9 +387,7 @@ class ReportService
                 ['key' => 'customer', 'label' => 'Customer'],
                 ['key' => 'mobile', 'label' => 'Mobile'],
                 ['key' => 'trip_count', 'label' => 'Trips'],
-                ['key' => 'total_freight', 'label' => 'Freight', 'format' => 'currency'],
-                ['key' => 'total_expense', 'label' => 'Expense', 'format' => 'currency'],
-                ['key' => 'total_profit', 'label' => 'Profit', 'format' => 'currency'],
+                ['key' => 'total_freight', 'label' => 'Ton', 'format' => 'currency'],
                 ['key' => 'total_billed', 'label' => 'Billed', 'format' => 'currency'],
                 ['key' => 'total_paid', 'label' => 'Paid', 'format' => 'currency'],
                 ['key' => 'outstanding', 'label' => 'Outstanding', 'format' => 'currency'],
@@ -400,7 +396,7 @@ class ReportService
             'chart' => [
                 'categories' => $grouped->take(10)->pluck('customer')->all(),
                 'series' => [
-                    ['name' => 'Freight', 'data' => $grouped->take(10)->pluck('total_freight')->all()],
+                    ['name' => 'Ton', 'data' => $grouped->take(10)->pluck('total_freight')->all()],
                 ],
             ],
         ];
@@ -431,8 +427,6 @@ class ReportService
             'truck' => $t->truck?->truck_number ?? '-',
             'driver' => $t->driver?->name ?? '-',
             'total_freight' => (float) $t->total_freight,
-            'total_expense' => (float) $t->total_expense,
-            'profit' => (float) $t->profit,
             'status' => $t->status,
         ])->values()->all();
 
@@ -444,9 +438,7 @@ class ReportService
             'summary' => [
                 ['label' => 'Customer', 'value' => $customerName],
                 ['label' => 'Total Trips', 'value' => $trips->count()],
-                ['label' => 'Total Freight', 'value' => round($trips->sum('total_freight'), 2)],
-                ['label' => 'Total Expense', 'value' => round($trips->sum('total_expense'), 2)],
-                ['label' => 'Total Profit', 'value' => round($trips->sum('profit'), 2)],
+                ['label' => 'Total Ton', 'value' => round($trips->sum('total_freight'), 2)],
                 ['label' => 'Total Billed', 'value' => round($invoices->sum('total_amount'), 2)],
                 ['label' => 'Outstanding', 'value' => round($invoices->sum(fn ($i) => $i->total_amount - $i->paid_amount), 2)],
             ],
@@ -457,13 +449,11 @@ class ReportService
                 ['key' => 'to_location', 'label' => 'To'],
                 ['key' => 'truck', 'label' => 'Truck'],
                 ['key' => 'driver', 'label' => 'Driver'],
-                ['key' => 'total_freight', 'label' => 'Freight', 'format' => 'currency'],
-                ['key' => 'total_expense', 'label' => 'Expense', 'format' => 'currency'],
-                ['key' => 'profit', 'label' => 'Profit', 'format' => 'currency'],
+                ['key' => 'total_freight', 'label' => 'Ton', 'format' => 'currency'],
                 ['key' => 'status', 'label' => 'Status'],
             ],
             'rows' => $rows,
-            'chart' => $this->weeklyChart($trips, 'start_date', 'total_freight', 'Freight by Day'),
+            'chart' => $this->weeklyChart($trips, 'start_date', 'total_freight', 'Ton by Day'),
         ];
     }
 

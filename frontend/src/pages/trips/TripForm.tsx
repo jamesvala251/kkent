@@ -135,7 +135,7 @@ export default function TripForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id && id !== 'new');
-  const [loadingData, setLoadingData] = useState(isEdit);
+  const [loadingData, setLoadingData] = useState(true);
   const [autoTripNumber, setAutoTripNumber] = useState('');
 
   const {
@@ -199,13 +199,19 @@ export default function TripForm() {
   }, [watched]);
 
   useEffect(() => {
-    Promise.all([
-      fetchList<Customer>('/customers'),
-      fetchList<Truck>('/trucks'),
-      fetchList<Driver>('/drivers'),
-      fetchList<HitachiMachine>('/hitachi-machines'),
-      api.get<{ diesel_default_price?: number }>('/settings').catch(() => ({ data: {} })),
-    ]).then(([c, t, d, h, settingsRes]) => {
+    let cancelled = false;
+
+    const load = async () => {
+      const [c, t, d, h, settingsRes] = await Promise.all([
+        fetchList<Customer>('/customers', { per_page: 500 }),
+        fetchList<Truck>('/trucks', { per_page: 500 }),
+        fetchList<Driver>('/drivers', { per_page: 500 }),
+        fetchList<HitachiMachine>('/hitachi-machines', { per_page: 500 }),
+        api.get<{ diesel_default_price?: number }>('/settings').catch(() => ({ data: {} })),
+      ]);
+
+      if (cancelled) return;
+
       setCustomers(c);
       setTrucks(t);
       setDrivers(d);
@@ -213,23 +219,10 @@ export default function TripForm() {
       const settingsData = settingsRes.data as { diesel_default_price?: number };
       const dieselPrice = Number(settingsData.diesel_default_price) || 0;
       setDefaultDieselRate(dieselPrice);
-      if (!isEdit && dieselPrice > 0) {
-        setValue('diesel_rate', dieselPrice);
-      }
-    });
-  }, [isEdit, setValue]);
 
-  useEffect(() => {
-    if (!isEdit) {
-      api.get<{ trip_number: string }>('/trips/next-number').then(({ data }) => {
-        setAutoTripNumber(data.trip_number);
-      });
-      return;
-    }
-
-    if (id) {
-      setLoadingData(true);
-      fetchOne<Trip>('/trips', id).then((data) => {
+      if (isEdit && id) {
+        const data = await fetchOne<Trip>('/trips', id);
+        if (cancelled) return;
         if (data) {
           setAutoTripNumber(data.trip_number);
           reset({
@@ -256,11 +249,23 @@ export default function TripForm() {
             compressor: data.compressor ?? false,
             remarks: data.remarks ?? '',
           });
+        } else {
+          toast.error('Failed to load trip');
         }
-        setLoadingData(false);
-      });
-    }
-  }, [id, isEdit, reset]);
+      } else {
+        const next = await api.get<{ trip_number: string }>('/trips/next-number');
+        if (!cancelled) setAutoTripNumber(next.data.trip_number);
+        if (dieselPrice > 0) setValue('diesel_rate', dieselPrice);
+      }
+
+      if (!cancelled) setLoadingData(false);
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isEdit, reset, setValue]);
 
   const onInvalid = (formErrors: FieldErrors<TripFormData>) => {
     const firstError = Object.values(formErrors).find((error) => error?.message);
@@ -358,6 +363,7 @@ export default function TripForm() {
                     label="Party Name (Customer)"
                     select
                     fullWidth
+                    value={watched.customer_id ?? ''}
                     error={!!errors.customer_id}
                     helperText={errors.customer_id?.message}
                   >
@@ -372,6 +378,7 @@ export default function TripForm() {
                     label="Truck"
                     select
                     fullWidth
+                    value={watched.truck_id ?? ''}
                     error={!!errors.truck_id}
                     helperText={errors.truck_id?.message}
                   >
@@ -386,6 +393,7 @@ export default function TripForm() {
                     label="Driver"
                     select
                     fullWidth
+                    value={watched.driver_id ?? ''}
                     error={!!errors.driver_id}
                     helperText={errors.driver_id?.message}
                   >
@@ -395,7 +403,7 @@ export default function TripForm() {
                   </TextField>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField {...register('hitachi_id')} label="Hitachi (Optional)" select fullWidth>
+                  <TextField {...register('hitachi_id')} label="Hitachi (Optional)" select fullWidth value={watched.hitachi_id ?? ''}>
                     <MenuItem value="">None</MenuItem>
                     {machines.map((m) => (
                       <MenuItem key={m.id} value={m.id}>{m.machine_number}</MenuItem>

@@ -15,8 +15,14 @@ export async function fetchList<T>(endpoint: string, params?: Record<string, unk
 
 export async function fetchOne<T>(endpoint: string, id: number | string): Promise<T | null> {
   try {
-    const { data } = await api.get<{ data: T } | T>(`${endpoint}/${id}`);
-    return data && typeof data === 'object' && 'data' in data ? data.data : (data as T);
+    const { data } = await api.get<unknown>(`${endpoint}/${id}`);
+    if (!data || typeof data !== 'object') return null;
+    const payload = data as Record<string, unknown>;
+    const nested = payload.data;
+    if (nested && typeof nested === 'object' && !Array.isArray(nested) && 'id' in nested) {
+      return nested as T;
+    }
+    return data as T;
   } catch {
     return null;
   }

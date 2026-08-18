@@ -55,7 +55,13 @@ export default function Settings() {
     setSaving(true);
     try {
       const payload = {
-        ...settings,
+        company_name: settings.company_name,
+        gst_number: settings.gst_number || null,
+        address: settings.address || null,
+        phone: settings.phone || null,
+        email: settings.email || null,
+        invoice_prefix: settings.invoice_prefix || null,
+        trip_prefix: settings.trip_prefix || null,
         diesel_default_price: Number(settings.diesel_default_price) || 0,
       };
       const { data } = await api.put<CompanySettings>('/settings', payload);
@@ -66,7 +72,7 @@ export default function Settings() {
       });
       toast.success('Settings saved');
     } catch {
-      toast.error('Failed to save settings');
+      // interceptor already shows the API error
     } finally {
       setSaving(false);
     }

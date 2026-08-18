@@ -81,12 +81,22 @@ export default function InvoiceList() {
     {
       id: 'source',
       label: 'Source',
-      format: (r) =>
-        r.hitachi_rental?.rental_number
-          ? `Hitachi ${r.hitachi_rental.rental_number}`
-          : r.trip?.trip_number
-            ? `Trip ${r.trip.trip_number}`
-            : '-',
+      format: (r) => {
+        if (r.hitachi_rental?.rental_number) return `Hitachi ${r.hitachi_rental.rental_number}`;
+        const tripCount = r.trips?.length || (r.trip ? 1 : 0);
+        if (tripCount > 1 && r.billing_month) {
+          const [year, month] = r.billing_month.split('-');
+          const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+          return `${tripCount} trips · ${label}`;
+        }
+        if (tripCount > 1) return `${tripCount} trips`;
+        if (r.billing_month && tripCount === 1) {
+          const [year, month] = r.billing_month.split('-');
+          const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+          return `Trip ${r.trip?.trip_number || r.trips?.[0]?.trip_number || ''} · ${label}`.trim();
+        }
+        return r.trip?.trip_number ? `Trip ${r.trip.trip_number}` : '-';
+      },
     },
     { id: 'invoice_date', label: 'Date', format: (r) => formatDate(r.invoice_date) },
     { id: 'due_date', label: 'Due Date', format: (r) => formatDate(r.due_date || '') },
