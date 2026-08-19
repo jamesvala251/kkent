@@ -7,6 +7,7 @@ Enterprise-grade ERP for transport, fleet, and Hitachi equipment management.
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 19 + Vite + TypeScript |
+| Mobile | Flutter (Android APK / iOS) |
 | UI | Material UI (MUI) |
 | State | Redux Toolkit |
 | Charts | ApexCharts |
@@ -22,7 +23,8 @@ Enterprise-grade ERP for transport, fleet, and Hitachi equipment management.
 ```
 kkent/
 ├── backend/          # Laravel REST API
-└── frontend/         # React SPA
+├── frontend/         # React SPA
+└── mobile/           # Flutter admin app
 ```
 
 ## Quick Start
@@ -55,6 +57,16 @@ npm run dev
 ```
 
 App: `http://localhost:5173`
+
+### Mobile admin (Flutter)
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+Android emulator talks to `http://10.0.2.2:8020/api`. See `mobile/README.md` for APK builds and production URL.
 
 ## API Modules
 
