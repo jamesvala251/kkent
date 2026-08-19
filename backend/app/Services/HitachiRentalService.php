@@ -75,9 +75,10 @@ class HitachiRentalService
     public function update(HitachiRental $rental, array $data): HitachiRental
     {
         return DB::transaction(function () use ($rental, $data) {
+            $status = $data['status'] ?? $rental->status;
             $merged = array_merge($rental->toArray(), $data);
             $data = $this->calculateFields($merged, $rental);
-            unset($data['status']);
+            $data['status'] = $status;
             $rental->update($data);
 
             return $rental->fresh(['hitachi', 'customer']);

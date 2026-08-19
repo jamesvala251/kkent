@@ -710,6 +710,7 @@ export default function DieselManagement() {
                 fullWidth
                 value={issueForm.trip_id}
                 onChange={(e) => setIssueForm({ ...issueForm, trip_id: e.target.value })}
+                helperText="Copies this issue into the trip diesel qty and amount"
               >
                 <MenuItem value="">None</MenuItem>
                 {trips.map((trip) => (

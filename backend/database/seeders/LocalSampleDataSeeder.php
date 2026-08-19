@@ -232,7 +232,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Sand',
                 'weight' => 16,
                 'freight' => 1200,
-                'status' => 'completed',
                 'days_ago' => 12,
             ],
             [
@@ -243,7 +242,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Aggregate',
                 'weight' => 18,
                 'freight' => 1100,
-                'status' => 'completed',
                 'days_ago' => 7,
             ],
             [
@@ -254,7 +252,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Cement',
                 'weight' => 14,
                 'freight' => 1300,
-                'status' => 'running',
                 'days_ago' => 1,
             ],
             // Dwarka Logistics — 2 trips
@@ -266,7 +263,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Stone',
                 'weight' => 20,
                 'freight' => 950,
-                'status' => 'completed',
                 'days_ago' => 10,
             ],
             [
@@ -277,7 +273,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Salt',
                 'weight' => 22,
                 'freight' => 800,
-                'status' => 'pending',
                 'days_ago' => 0,
             ],
             // Saurashtra Aggregates — 2 trips
@@ -289,7 +284,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Clay',
                 'weight' => 15,
                 'freight' => 1000,
-                'status' => 'completed',
                 'days_ago' => 5,
             ],
             [
@@ -300,7 +294,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Sand',
                 'weight' => 12,
                 'freight' => 900,
-                'status' => 'completed',
                 'days_ago' => 3,
             ],
             // Kutch Infra — 1 trip
@@ -312,7 +305,6 @@ class LocalSampleDataSeeder extends Seeder
                 'material' => 'Machinery',
                 'weight' => 10,
                 'freight' => 1500,
-                'status' => 'completed',
                 'days_ago' => 4,
             ],
         ];
@@ -342,9 +334,7 @@ class LocalSampleDataSeeder extends Seeder
                     'truck_id' => $truck->id,
                     'driver_id' => $driver->id,
                     'start_date' => now()->subDays($def['days_ago'])->toDateString(),
-                    'end_date' => $def['status'] === 'completed'
-                        ? now()->subDays(max(0, $def['days_ago'] - 1))->toDateString()
-                        : null,
+                    'end_date' => now()->subDays(max(0, $def['days_ago'] - 1))->toDateString(),
                     'from_location' => $def['from'],
                     'to_location' => $def['to'],
                     'material' => $def['material'],
@@ -367,7 +357,6 @@ class LocalSampleDataSeeder extends Seeder
                     'profit' => round($totalFreight - $totalExpense, 2),
                     'compressor' => false,
                     'remarks' => 'Local sample trip for testing',
-                    'status' => $def['status'],
                 ]
             );
         }
@@ -491,6 +480,7 @@ class LocalSampleDataSeeder extends Seeder
                     'amount' => 2500,
                 ],
                 [
+                    'hitachi_id' => $hitachiRental->hitachi_id,
                     'description' => 'Sample site expense linked to Hitachi rental HRE-SAMPLE-001',
                 ]
             );

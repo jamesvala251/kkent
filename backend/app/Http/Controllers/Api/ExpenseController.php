@@ -32,44 +32,50 @@ class ExpenseController extends ApiController
 
     public function store(Request $request): JsonResponse
     {
+        $this->blankLinkIds($request);
         $data = $request->validate([
             'expense_date' => 'required|date',
             'truck_id' => 'nullable|exists:trucks,id',
             'driver_id' => 'nullable|exists:drivers,id',
             'trip_id' => 'nullable|exists:trips,id',
+            'hitachi_id' => 'nullable|exists:hitachi_machines,id',
             'hitachi_rental_id' => 'nullable|exists:hitachi_rentals,id',
             'category_id' => 'required|exists:expense_categories,id',
             'amount' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'bill' => 'nullable|file|max:5120',
         ]);
+        $data = $this->normalizeLinks($data);
 
         if ($request->hasFile('bill')) {
             $data['bill_path'] = $request->file('bill')->store('bills', 'public');
         }
         unset($data['bill']);
 
-        return $this->success($this->service->create($data)->load(['category', 'hitachiRental.hitachi']), 'Expense created', 201);
+        return $this->success($this->service->create($data)->load(['category', 'hitachi', 'hitachiRental.hitachi']), 'Expense created', 201);
     }
 
     public function show(Expense $expense): JsonResponse
     {
-        return $this->success($expense->load(['category', 'truck', 'driver', 'trip', 'hitachiRental.hitachi']));
+        return $this->success($expense->load(['category', 'truck', 'driver', 'trip', 'hitachi', 'hitachiRental.hitachi']));
     }
 
     public function update(Request $request, Expense $expense): JsonResponse
     {
+        $this->blankLinkIds($request);
         $data = $request->validate([
             'expense_date' => 'sometimes|date',
             'truck_id' => 'nullable|exists:trucks,id',
             'driver_id' => 'nullable|exists:drivers,id',
             'trip_id' => 'nullable|exists:trips,id',
+            'hitachi_id' => 'nullable|exists:hitachi_machines,id',
             'hitachi_rental_id' => 'nullable|exists:hitachi_rentals,id',
             'category_id' => 'sometimes|exists:expense_categories,id',
             'amount' => 'sometimes|numeric|min:0',
             'description' => 'nullable|string',
             'bill' => 'nullable|file|max:5120',
         ]);
+        $data = $this->normalizeLinks($data);
 
         if ($request->hasFile('bill')) {
             if ($expense->bill_path) {
@@ -79,7 +85,7 @@ class ExpenseController extends ApiController
         }
         unset($data['bill']);
 
-        return $this->success($this->service->update($expense, $data)->load(['category', 'hitachiRental.hitachi']), 'Expense updated');
+        return $this->success($this->service->update($expense, $data)->load(['category', 'hitachi', 'hitachiRental.hitachi']), 'Expense updated');
     }
 
     public function destroy(Expense $expense): JsonResponse
@@ -87,5 +93,40 @@ class ExpenseController extends ApiController
         $this->service->delete($expense);
 
         return $this->success(null, 'Expense deleted');
+    }
+
+    private function blankLinkIds(Request $request): void
+    {
+        $merged = [];
+        foreach (['truck_id', 'driver_id', 'trip_id', 'hitachi_id', 'hitachi_rental_id'] as $key) {
+            if (! $request->exists($key)) {
+                continue;
+            }
+            $value = $request->input($key);
+            if ($value === '' || $value === 'null' || $value === '0' || $value === 0) {
+                $merged[$key] = null;
+            }
+        }
+        if ($merged) {
+            $request->merge($merged);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeLinks(array $data): array
+    {
+        foreach (['truck_id', 'driver_id', 'trip_id', 'hitachi_id', 'hitachi_rental_id'] as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+            if ($data[$key] === '' || $data[$key] === 'null' || $data[$key] === '0' || $data[$key] === 0) {
+                $data[$key] = null;
+            }
+        }
+
+        return $data;
     }
 }

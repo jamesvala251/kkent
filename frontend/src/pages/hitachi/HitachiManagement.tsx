@@ -51,6 +51,7 @@ const emptyRentalForm = {
   advance_received: '',
   operator_name: '',
   notes: '',
+  status: 'running',
 };
 
 const billingLabel: Record<BillingType, string> = {
@@ -60,7 +61,7 @@ const billingLabel: Record<BillingType, string> = {
 };
 
 const machineInitialFilters: FilterValues = { search: '' };
-const rentalInitialFilters: FilterValues = { customer_id: '', hitachi_id: '', billing_type: '' };
+const rentalInitialFilters: FilterValues = { customer_id: '', hitachi_id: '', billing_type: '', status: '' };
 
 export default function HitachiManagement() {
   const navigate = useNavigate();
@@ -168,6 +169,7 @@ export default function HitachiManagement() {
         advance_received: rental.advance_received != null ? String(rental.advance_received) : '',
         operator_name: rental.operator_name ?? '',
         notes: rental.notes ?? '',
+        status: rental.status ?? 'booked',
       });
     } else {
       setEditingRental(null);
@@ -198,7 +200,7 @@ export default function HitachiManagement() {
         advance_received: Number(rentalForm.advance_received) || 0,
         operator_name: rentalForm.operator_name || null,
         notes: rentalForm.notes || null,
-        ...(editingRental ? {} : { status: 'booked' }),
+        status: rentalForm.status || 'booked',
       };
 
       if (editingRental) {
@@ -307,6 +309,11 @@ export default function HitachiManagement() {
     { id: 'total_amount', label: 'Total', align: 'right', format: (r) => formatCurrency(Number(r.total_amount)) },
     { id: 'balance', label: 'Balance', align: 'right', format: (r) => formatCurrency(Number(r.balance) || 0) },
     {
+      id: 'status',
+      label: 'Status',
+      format: (r) => <Chip size="small" label={r.status} color={r.status === 'completed' ? 'success' : r.status === 'running' ? 'info' : r.status === 'cancelled' ? 'error' : 'warning'} />,
+    },
+    {
       id: 'actions',
       label: 'Actions',
       align: 'right',
@@ -341,6 +348,9 @@ export default function HitachiManagement() {
         breadcrumbs={[{ label: 'Hitachi' }]}
         action={
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => navigate('/expenses/new?kind=hitachi')}>
+              Add Expense
+            </Button>
             <Button variant="outlined" startIcon={<AddIcon />} onClick={() => navigate('/hitachi/new')}>
               Add Machine
             </Button>
@@ -455,6 +465,22 @@ export default function HitachiManagement() {
                 <MenuItem value="monthly">Monthly</MenuItem>
               </TextField>
             </FilterField>
+            <FilterField>
+              <TextField
+                select
+                label="Status"
+                fullWidth
+                size="small"
+                value={rentalFilters.status ?? ''}
+                onChange={(e) => setRentalFilters({ ...rentalFilters, status: e.target.value })}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="booked">Booked</MenuItem>
+                <MenuItem value="running">Running</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="cancelled">Cancelled</MenuItem>
+              </TextField>
+            </FilterField>
           </FilterPanel>
           <DataTable columns={rentalColumns} rows={rentals} loading={loading} searchable={false} getRowId={(r) => r.id} />
         </>
@@ -561,6 +587,20 @@ export default function HitachiManagement() {
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField label="Estimated Balance" fullWidth value={formatCurrency(estimatedTotal - (Number(rentalForm.advance_received) || 0))} slotProps={{ input: { readOnly: true } }} />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                label="Status"
+                select
+                fullWidth
+                value={rentalForm.status}
+                onChange={(e) => setRentalForm({ ...rentalForm, status: e.target.value })}
+              >
+                <MenuItem value="booked">Booked</MenuItem>
+                <MenuItem value="running">Running</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="cancelled">Cancelled</MenuItem>
+              </TextField>
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Notes" fullWidth multiline rows={2} value={rentalForm.notes} onChange={(e) => setRentalForm({ ...rentalForm, notes: e.target.value })} />

@@ -66,6 +66,7 @@ const schema = yup.object({
   sgst_rate: optionalNumber(),
   igst_rate: optionalNumber(),
   paid_amount: optionalNumber(),
+  payment_status: yup.string().optional(),
   notes: yup.string(),
 });
 
@@ -81,6 +82,7 @@ interface InvoiceFormData {
   sgst_rate?: number;
   igst_rate?: number;
   paid_amount?: number;
+  payment_status?: Invoice['payment_status'];
   notes?: string;
 }
 
@@ -161,6 +163,7 @@ export default function InvoiceForm() {
       sgst_rate: 0,
       igst_rate: 0,
       paid_amount: 0,
+      payment_status: 'pending',
       trip_id: null,
       hitachi_rental_id: null,
     },
@@ -266,6 +269,7 @@ export default function InvoiceForm() {
           sgst_rate: resolveRate(data.sgst_rate, data.sgst, subtotal),
           igst_rate: resolveRate(data.igst_rate, data.igst, subtotal),
           paid_amount: Number(data.paid_amount ?? 0),
+          payment_status: data.payment_status ?? 'pending',
           notes: data.notes ?? '',
         });
       }
@@ -341,6 +345,10 @@ export default function InvoiceForm() {
   };
 
   const onSubmit = async (data: InvoiceFormData) => {
+    if (!data.hitachi_rental_id && monthTrips.length === 0) {
+      toast.error('Keep at least one trip, or select a Hitachi rental');
+      return;
+    }
     const payload: Partial<Invoice> = {
       customer_id: data.customer_id,
       trip_id: null,
@@ -355,6 +363,7 @@ export default function InvoiceForm() {
       sgst_rate: Number(data.sgst_rate) || 0,
       igst_rate: Number(data.igst_rate) || 0,
       paid_amount: data.paid_amount,
+      payment_status: data.payment_status,
       notes: data.notes || undefined,
     };
     try {
@@ -452,7 +461,7 @@ export default function InvoiceForm() {
                   fullWidth
                   disabled={hasRental}
                   slotProps={{ inputLabel: { shrink: true } }}
-                  helperText={hasRental ? 'Clear Hitachi rental to bill monthly trips' : 'All trips in this month are included'}
+                  helperText={hasRental ? 'Clear Hitachi rental to bill monthly trips' : 'Trips in this month load below — remove any you do not want billed'}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
@@ -511,7 +520,7 @@ export default function InvoiceForm() {
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   {selectedCustomerId
-                    ? 'Every uninvoiced trip for this customer in the selected month is added to the invoice.'
+                    ? 'Uninvoiced trips for this customer and month are listed. Remove any trip you do not want on this invoice.'
                     : 'Select a customer to load trips for the month.'}
                 </Typography>
                 <Table size="small">
@@ -522,6 +531,7 @@ export default function InvoiceForm() {
                       <TableCell>Route</TableCell>
                       <TableCell>Truck / Driver</TableCell>
                       <TableCell align="right">Amount</TableCell>
+                      <TableCell align="right" sx={{ width: 56 }} />
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -538,12 +548,40 @@ export default function InvoiceForm() {
                           {[trip.truck?.truck_number, trip.driver?.name].filter(Boolean).join(' · ') || '-'}
                         </TableCell>
                         <TableCell align="right">{formatCurrency(tripAmount(trip))}</TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            type="button"
+                            size="small"
+                            color="error"
+                            aria-label={`Remove trip ${trip.trip_number}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setMonthTrips((rows) => {
+                                const next = rows.filter((row) => row.id !== trip.id);
+                                if (!isEdit) {
+                                  const monthLabel = dayjs(`${billingMonth}-01`).format('MMMM YYYY');
+                                  setValue(
+                                    'notes',
+                                    next.length > 0
+                                      ? `Monthly trips — ${monthLabel} (${next.length} trip${next.length === 1 ? '' : 's'})`
+                                      : '',
+                                  );
+                                }
+                                return next;
+                              });
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {!loadingTrips && monthTrips.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          {selectedCustomerId ? 'No uninvoiced trips for this customer in this month' : '—'}
+                        <TableCell colSpan={6} align="center">
+                          {selectedCustomerId
+                            ? 'No trips on this invoice. Change customer or month to reload the list.'
+                            : '—'}
                         </TableCell>
                       </TableRow>
                     )}
@@ -557,6 +595,7 @@ export default function InvoiceForm() {
                         <TableCell align="right" sx={{ fontWeight: 700 }}>
                           {formatCurrency(monthTrips.reduce((sum, trip) => sum + tripAmount(trip), 0))}
                         </TableCell>
+                        <TableCell />
                       </TableRow>
                     </TableFooter>
                   )}
@@ -663,55 +702,111 @@ export default function InvoiceForm() {
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
-                  {...register('cgst_rate')}
+                  {...register('cgst_rate', {
+                    onChange: (e) => {
+                      if (Number(e.target.value) > 0) setValue('igst_rate', 0);
+                    },
+                  })}
                   label="CGST (%)"
                   type="number"
                   fullWidth
                   placeholder="Optional"
+                  disabled={Number(watched.igst_rate) > 0}
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
                   InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
-                  helperText={Number(watched.cgst_rate) > 0 ? `Tax amount: ${formatCurrency(gst.cgst)}` : 'Optional'}
+                  helperText={
+                    Number(watched.igst_rate) > 0
+                      ? 'Cleared when IGST is used'
+                      : Number(watched.cgst_rate) > 0
+                        ? `Tax amount: ${formatCurrency(gst.cgst)}`
+                        : 'Optional'
+                  }
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
-                  {...register('sgst_rate')}
+                  {...register('sgst_rate', {
+                    onChange: (e) => {
+                      if (Number(e.target.value) > 0) setValue('igst_rate', 0);
+                    },
+                  })}
                   label="SGST (%)"
                   type="number"
                   fullWidth
                   placeholder="Optional"
+                  disabled={Number(watched.igst_rate) > 0}
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
                   InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
-                  helperText={Number(watched.sgst_rate) > 0 ? `Tax amount: ${formatCurrency(gst.sgst)}` : 'Optional'}
+                  helperText={
+                    Number(watched.igst_rate) > 0
+                      ? 'Cleared when IGST is used'
+                      : Number(watched.sgst_rate) > 0
+                        ? `Tax amount: ${formatCurrency(gst.sgst)}`
+                        : 'Optional'
+                  }
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
-                  {...register('igst_rate')}
+                  {...register('igst_rate', {
+                    onChange: (e) => {
+                      if (Number(e.target.value) > 0) {
+                        setValue('cgst_rate', 0);
+                        setValue('sgst_rate', 0);
+                      }
+                    },
+                  })}
                   label="IGST (%)"
                   type="number"
                   fullWidth
                   placeholder="Optional"
+                  disabled={Number(watched.cgst_rate) > 0 || Number(watched.sgst_rate) > 0}
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
                   InputProps={{ endAdornment: <Typography color="text.secondary">%</Typography> }}
-                  helperText={Number(watched.igst_rate) > 0 ? `Tax amount: ${formatCurrency(gst.igst)}` : 'Optional — inter-state'}
+                  helperText={
+                    Number(watched.cgst_rate) > 0 || Number(watched.sgst_rate) > 0
+                      ? 'Cleared when CGST / SGST is used'
+                      : Number(watched.igst_rate) > 0
+                        ? `Tax amount: ${formatCurrency(gst.igst)}`
+                        : 'Optional — inter-state'
+                  }
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
                 <TextField label="Total Amount" value={formatCurrency(gst.total)} fullWidth slotProps={{ input: { readOnly: true } }} />
               </Grid>
-              {isEdit && (
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('paid_amount')} label="Paid Amount (₹)" type="number" fullWidth />
-                </Grid>
-              )}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField {...register('paid_amount')} label="Paid Amount (₹)" type="number" fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  {...register('payment_status')}
+                  label="Payment Status"
+                  select
+                  fullWidth
+                  value={watched.payment_status ?? 'pending'}
+                >
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="partial">Partial</MenuItem>
+                  <MenuItem value="paid">Paid</MenuItem>
+                  <MenuItem value="overdue">Overdue</MenuItem>
+                </TextField>
+              </Grid>
               <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Tax is optional. Leave CGST / SGST / IGST at 0 if not applicable.
+                  Tax is optional. Use CGST + SGST for intra-state, or IGST for inter-state — not both.
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <TextField {...register('notes')} label="Notes" fullWidth multiline rows={2} />
+                <TextField
+                  {...register('notes')}
+                  label="Notes"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={watched.notes ?? ''}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
               </Grid>
               <Grid size={{ xs: 12 }}>
                 <Button type="submit" variant="contained" startIcon={<SaveIcon />} disabled={isSubmitting}>

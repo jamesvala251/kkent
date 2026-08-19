@@ -17,6 +17,7 @@ class PermissionController extends ApiController
     ];
 
     private const MODULE_LABELS = [
+        'dashboard' => 'Dashboard',
         'customers' => 'Customers',
         'drivers' => 'Drivers',
         'trucks' => 'Trucks',
@@ -27,15 +28,17 @@ class PermissionController extends ApiController
         'salaries' => 'Salary',
         'invoices' => 'Invoices',
         'challans' => 'Challan',
-        'maintenance' => 'Maintenance',
         'reports' => 'Reports',
         'settings' => 'Settings',
+        'users' => 'Users',
         'roles' => 'Roles & Permissions',
     ];
 
     public function index(): JsonResponse
     {
         $permissions = Permission::orderBy('name')->pluck('name');
+
+        $order = array_flip(array_keys(self::MODULE_LABELS));
 
         $grouped = $permissions
             ->groupBy(fn (string $name) => explode('.', $name)[0])
@@ -52,6 +55,7 @@ class PermissionController extends ApiController
                     'permissions' => $permissionMap,
                 ];
             })
+            ->sortBy(fn (array $group) => $order[$group['module']] ?? 1000)
             ->values();
 
         return $this->success([

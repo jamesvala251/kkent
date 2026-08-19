@@ -153,7 +153,6 @@ export interface Trip {
   profit?: number;
   compressor?: boolean;
   remarks?: string;
-  status: string;
   customer?: Customer;
   truck?: Truck;
   driver?: Driver;
@@ -226,10 +225,12 @@ export interface Expense {
   truck_id?: number | null;
   driver_id?: number | null;
   trip_id?: number | null;
+  hitachi_id?: number | null;
   hitachi_rental_id?: number | null;
   truck?: Truck;
   driver?: Driver;
   trip?: Trip;
+  hitachi?: HitachiMachine;
   hitachi_rental?: HitachiRental;
   amount: number;
   description?: string;
@@ -267,7 +268,10 @@ export interface SalaryAdvance {
 export interface SalaryReconciliationRow {
   driver_id: number;
   driver_name: string;
+  salary_type?: string;
+  monthly_salary?: number;
   total_trip_salary: number;
+  total_salary?: number;
   total_advanced_salary: number;
   remaining_salary: number;
 }
@@ -320,6 +324,16 @@ export interface DashboardStats {
   total_profit: number;
   pending_invoices: number;
   active_drivers: number;
+}
+
+export interface AppUser {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  status: string;
+  roles?: string[];
+  created_at?: string;
 }
 
 export interface Role {

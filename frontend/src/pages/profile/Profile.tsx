@@ -27,8 +27,7 @@ export default function Profile() {
       dispatch(updateUser(updated));
       toast.success('Profile updated');
     } catch {
-      dispatch(updateUser({ name, email, phone }));
-      toast.info('Profile updated locally (API pending)');
+      toast.error('Failed to update profile');
     } finally {
       setSaving(false);
     }

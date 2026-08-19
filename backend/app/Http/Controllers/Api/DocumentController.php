@@ -23,7 +23,10 @@ class DocumentController extends ApiController
             return $this->error('Invalid document type', 422);
         }
 
-        $documents = Document::where('documentable_type', $modelClass)
+        $documents = Document::where(function ($query) use ($modelClass, $type) {
+            $query->where('documentable_type', $modelClass)
+                ->orWhere('documentable_type', $type);
+        })
             ->where('documentable_id', $id)
             ->get();
 
@@ -42,6 +45,17 @@ class DocumentController extends ApiController
             'notes' => 'nullable|string',
         ]);
 
+        $allowed = [
+            'truck' => \App\Models\Truck::class,
+            'driver' => \App\Models\Driver::class,
+            'hitachi' => \App\Models\HitachiMachine::class,
+            'customer' => \App\Models\Customer::class,
+        ];
+        if (isset($allowed[$data['documentable_type']])) {
+            $data['documentable_type'] = $allowed[$data['documentable_type']];
+        } elseif (! in_array($data['documentable_type'], $allowed, true)) {
+            return $this->error('Invalid document type', 422);
+        }
         $data['file_path'] = $request->file('file')->store('documents', 'public');
         $data['created_by'] = auth()->id();
         unset($data['file']);

@@ -10,7 +10,7 @@ class AppNotification extends Model
     protected $table = 'notifications';
 
     protected $fillable = [
-        'user_id', 'type', 'title', 'message', 'link', 'data', 'is_read', 'read_at',
+        'user_id', 'type', 'dedupe_key', 'title', 'message', 'link', 'data', 'is_read', 'read_at',
     ];
 
     protected function casts(): array

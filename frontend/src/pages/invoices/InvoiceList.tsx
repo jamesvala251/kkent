@@ -20,6 +20,7 @@ const initialFilters: FilterValues = {
   customer_id: '',
   date_from: '',
   date_to: '',
+  payment_status: '',
   search: '',
 };
 
@@ -102,6 +103,7 @@ export default function InvoiceList() {
     { id: 'due_date', label: 'Due Date', format: (r) => formatDate(r.due_date || '') },
     { id: 'subtotal', label: 'Subtotal', align: 'right', format: (r) => formatCurrency(Number(r.subtotal)) },
     { id: 'total_amount', label: 'Total', align: 'right', format: (r) => formatCurrency(Number(r.total_amount)) },
+    { id: 'payment_status', label: 'Payment', format: (r) => r.payment_status },
     {
       id: 'actions',
       label: 'Actions',
@@ -185,6 +187,22 @@ export default function InvoiceList() {
             onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
             slotProps={{ inputLabel: { shrink: true } }}
           />
+        </FilterField>
+        <FilterField>
+          <TextField
+            select
+            label="Payment status"
+            fullWidth
+            size="small"
+            value={filters.payment_status ?? ''}
+            onChange={(e) => setFilters({ ...filters, payment_status: e.target.value })}
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="partial">Partial</MenuItem>
+            <MenuItem value="paid">Paid</MenuItem>
+            <MenuItem value="overdue">Overdue</MenuItem>
+          </TextField>
         </FilterField>
         <FilterField size={{ xs: 12, sm: 6, md: 4 }}>
           <TextField

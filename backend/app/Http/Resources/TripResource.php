@@ -44,7 +44,6 @@ class TripResource extends JsonResource
             'profit' => $this->profit,
             'compressor' => $this->compressor,
             'remarks' => $this->remarks,
-            'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

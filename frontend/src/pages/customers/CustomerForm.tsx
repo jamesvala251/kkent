@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Button, Card, CardContent, MenuItem, TextField } from '@mui/material';
+import { Box, Button, Card, CardContent, MenuItem, TextField, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useForm, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
+import DocumentPanel from '../../components/common/DocumentPanel';
 import { createItem, fetchOne, updateItem } from '../../services/resourceService';
 import type { Customer } from '../../types';
 
@@ -116,9 +118,16 @@ export default function CustomerForm() {
         title={isEdit ? 'Edit Customer' : 'New Customer'}
         breadcrumbs={[{ label: 'Customers', to: '/customers' }, { label: isEdit ? 'Edit' : 'New' }]}
         action={
-          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/customers')}>
-            Back
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {isEdit && id && (
+              <Button startIcon={<ReceiptLongIcon />} onClick={() => navigate(`/customers/${id}/ledger`)}>
+                Ledger
+              </Button>
+            )}
+            <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/customers')}>
+              Back
+            </Button>
+          </Box>
         }
       />
 
@@ -189,6 +198,17 @@ export default function CustomerForm() {
           </Box>
         </CardContent>
       </Card>
+
+      {isEdit && id && (
+        <Card sx={{ mt: 2.5 }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Documents
+            </Typography>
+            <DocumentPanel type="customer" entityId={Number(id)} />
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

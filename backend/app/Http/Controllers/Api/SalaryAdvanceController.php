@@ -100,7 +100,7 @@ class SalaryAdvanceController extends ApiController
         $drivers = Driver::query()
             ->when(! empty($validated['driver_id']), fn ($q) => $q->where('id', $validated['driver_id']))
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'salary_type', 'monthly_salary']);
 
         $tripSalary = Trip::query()
             ->whereDate('start_date', '>=', $start->toDateString())
@@ -119,15 +119,26 @@ class SalaryAdvanceController extends ApiController
             ->pluck('total', 'driver_id');
 
         $rows = $drivers->map(function (Driver $driver) use ($tripSalary, $advances) {
+            $monthly = round((float) ($driver->monthly_salary ?? 0), 2);
             $trip = round((float) ($tripSalary[$driver->id] ?? 0), 2);
             $advance = round((float) ($advances[$driver->id] ?? 0), 2);
+            $salaryType = $driver->salary_type ?: 'monthly';
+
+            $totalSalary = match ($salaryType) {
+                'per_trip' => $trip,
+                'both' => round($monthly + $trip, 2),
+                default => $monthly,
+            };
 
             return [
                 'driver_id' => $driver->id,
                 'driver_name' => $driver->name,
+                'salary_type' => $salaryType,
+                'monthly_salary' => $monthly,
                 'total_trip_salary' => $trip,
+                'total_salary' => $totalSalary,
                 'total_advanced_salary' => $advance,
-                'remaining_salary' => round($trip - $advance, 2),
+                'remaining_salary' => round($totalSalary - $advance, 2),
             ];
         })->values()->all();
 

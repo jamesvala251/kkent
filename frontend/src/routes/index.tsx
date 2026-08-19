@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAppSelector } from '../hooks/redux';
+import { getHomePath } from '../utils/permissions';
 import DashboardLayout from '../layouts/DashboardLayout';
 import LandingPage from '../pages/landing/LandingPage';
 import Login from '../pages/auth/Login';
@@ -8,6 +9,7 @@ import ResetPassword from '../pages/auth/ResetPassword';
 import Dashboard from '../pages/Dashboard';
 import CustomerList from '../pages/customers/CustomerList';
 import CustomerForm from '../pages/customers/CustomerForm';
+import CustomerLedger from '../pages/customers/CustomerLedger';
 import DriverList from '../pages/drivers/DriverList';
 import DriverForm from '../pages/drivers/DriverForm';
 import TruckList from '../pages/trucks/TruckList';
@@ -26,6 +28,8 @@ import ChallanManagement from '../pages/challan/ChallanManagement';
 import Reports from '../pages/reports/Reports';
 import RoleList from '../pages/roles/RoleList';
 import RoleForm from '../pages/roles/RoleForm';
+import UserList from '../pages/users/UserList';
+import UserForm from '../pages/users/UserForm';
 import Settings from '../pages/settings/Settings';
 import Profile from '../pages/profile/Profile';
 
@@ -36,8 +40,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  if (isAuthenticated) return <Navigate to={getHomePath(user)} replace />;
   return children;
 }
 
@@ -60,6 +64,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/new" element={<CustomerForm />} />
+        <Route path="customers/:id/ledger" element={<CustomerLedger />} />
         <Route path="customers/:id/edit" element={<CustomerForm />} />
         <Route path="drivers" element={<DriverList />} />
         <Route path="drivers/new" element={<DriverForm />} />
@@ -73,6 +78,7 @@ export default function AppRoutes() {
         <Route path="trips" element={<TripList />} />
         <Route path="trips/new" element={<TripForm />} />
         <Route path="trips/:id/edit" element={<TripForm />} />
+        <Route path="trips/:id" element={<TripForm />} />
         <Route path="expenses" element={<ExpenseList />} />
         <Route path="expenses/new" element={<ExpenseForm />} />
         <Route path="expenses/:id/edit" element={<ExpenseForm />} />
@@ -85,6 +91,9 @@ export default function AppRoutes() {
         <Route path="invoices/:id/edit" element={<InvoiceForm />} />
         <Route path="challan" element={<ChallanManagement />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="users" element={<UserList />} />
+        <Route path="users/new" element={<UserForm />} />
+        <Route path="users/:id/edit" element={<UserForm />} />
         <Route path="roles" element={<RoleList />} />
         <Route path="roles/new" element={<RoleForm />} />
         <Route path="roles/:id/edit" element={<RoleForm />} />

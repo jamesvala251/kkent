@@ -3,7 +3,6 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   Breadcrumbs,
   Divider,
@@ -37,10 +36,10 @@ import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import DescriptionIcon from '@mui/icons-material/Description';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import GroupIcon from '@mui/icons-material/Group';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
@@ -49,22 +48,27 @@ import CompanyLogo from '../components/common/CompanyLogo';
 import { logout } from '../store/slices/authSlice';
 import { setSidebarOpen, toggleDarkMode, toggleSidebarCollapsed } from '../store/slices/uiSlice';
 import { headerHeight, sidebarCollapsedWidth, sidebarWidth } from '../theme/theme';
+import { hasPermission } from '../utils/permissions';
+import { authService } from '../services/authService';
+import GlobalSearch from '../components/common/GlobalSearch';
+import NotificationBell from '../components/common/NotificationBell';
 
 const menuItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-  { label: 'Customers', path: '/customers', icon: <PeopleIcon /> },
-  { label: 'Drivers', path: '/drivers', icon: <LocalShippingIcon /> },
-  { label: 'Trucks', path: '/trucks', icon: <DirectionsCarIcon /> },
-  { label: 'Hitachi', path: '/hitachi', icon: <ConstructionIcon /> },
-  { label: 'Trips', path: '/trips', icon: <RouteIcon /> },
-  { label: 'Diesel', path: '/diesel', icon: <LocalGasStationIcon /> },
-  { label: 'Expenses', path: '/expenses', icon: <ReceiptLongIcon /> },
-  { label: 'Salary', path: '/salary', icon: <PaymentsIcon /> },
-  { label: 'Invoices', path: '/invoices', icon: <RequestQuoteIcon /> },
-  { label: 'Challan', path: '/challan', icon: <DescriptionIcon /> },
-  { label: 'Reports', path: '/reports', icon: <AssessmentIcon /> },
-  { label: 'Roles & Permissions', path: '/roles', icon: <AdminPanelSettingsIcon /> },
-  { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
+  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, permission: 'dashboard.view' },
+  { label: 'Customers', path: '/customers', icon: <PeopleIcon />, permission: 'customers.view' },
+  { label: 'Drivers', path: '/drivers', icon: <LocalShippingIcon />, permission: 'drivers.view' },
+  { label: 'Trucks', path: '/trucks', icon: <DirectionsCarIcon />, permission: 'trucks.view' },
+  { label: 'Hitachi', path: '/hitachi', icon: <ConstructionIcon />, permission: 'hitachi.view' },
+  { label: 'Trips', path: '/trips', icon: <RouteIcon />, permission: 'trips.view' },
+  { label: 'Diesel', path: '/diesel', icon: <LocalGasStationIcon />, permission: 'diesel.view' },
+  { label: 'Expenses', path: '/expenses', icon: <ReceiptLongIcon />, permission: 'expenses.view' },
+  { label: 'Salary', path: '/salary', icon: <PaymentsIcon />, permission: 'salaries.view' },
+  { label: 'Invoices', path: '/invoices', icon: <RequestQuoteIcon />, permission: 'invoices.view' },
+  { label: 'Challan', path: '/challan', icon: <DescriptionIcon />, permission: 'challans.view' },
+  { label: 'Reports', path: '/reports', icon: <AssessmentIcon />, permission: 'reports.view' },
+  { label: 'Users', path: '/users', icon: <GroupIcon />, permission: 'users.view' },
+  { label: 'Roles & Permissions', path: '/roles', icon: <AdminPanelSettingsIcon />, permission: 'roles.view' },
+  { label: 'Settings', path: '/settings', icon: <SettingsIcon />, permission: 'settings.view' },
 ];
 
 export default function DashboardLayout() {
@@ -77,6 +81,7 @@ export default function DashboardLayout() {
   const { sidebarOpen, sidebarCollapsed, darkMode } = useAppSelector((state) => state.ui);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const visibleMenu = menuItems.filter((item) => !item.permission || hasPermission(user, item.permission));
   const isCollapsed = !isMobile && sidebarCollapsed;
   const drawerWidth = isMobile ? sidebarWidth : (isCollapsed ? sidebarCollapsedWidth : sidebarWidth);
 
@@ -99,7 +104,12 @@ export default function DashboardLayout() {
     }));
   }, [location.pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // still clear local session
+    }
     dispatch(logout());
     navigate('/auth/login');
   };
@@ -151,7 +161,7 @@ export default function DashboardLayout() {
       </Box>
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       <List sx={{ flex: 1, py: 1.5, overflow: 'auto' }}>
-        {menuItems.map((item) => {
+        {visibleMenu.map((item) => {
           const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
           const listItem = (
             <ListItemButton
@@ -260,7 +270,7 @@ export default function DashboardLayout() {
               )}
             </IconButton>
 
-            <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ flex: 1, display: { xs: 'none', sm: 'flex' } }}>
+            <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ flex: 1, minWidth: 0, display: { xs: 'none', md: 'flex' } }}>
               <Typography variant="body2" color="text.secondary">
                 Home
               </Typography>
@@ -278,17 +288,15 @@ export default function DashboardLayout() {
 
             <Box sx={{ flex: 1, display: { sm: 'none' } }} />
 
+            <GlobalSearch />
+
             <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
               <IconButton onClick={() => dispatch(toggleDarkMode())}>
                 {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
               </IconButton>
             </Tooltip>
 
-            <IconButton>
-              <Badge badgeContent={3} color="error">
-                <NotificationsNoneIcon />
-              </Badge>
-            </IconButton>
+            <NotificationBell />
 
             <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
               <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 14 }}>

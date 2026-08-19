@@ -54,10 +54,4 @@ class HitachiMachine extends Model
     {
         return $this->morphMany(Document::class, 'documentable');
     }
-
-    public function maintenanceRecords(): HasMany
-    {
-        return $this->hasMany(MaintenanceRecord::class, 'vehicle_id')
-            ->where('vehicle_type', 'hitachi');
-    }
 }

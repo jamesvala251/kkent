@@ -36,7 +36,6 @@ class StoreTripRequest extends FormRequest
             'advance_received' => 'nullable|numeric|min:0',
             'compressor' => 'nullable|boolean',
             'remarks' => 'nullable|string',
-            'status' => 'nullable|in:pending,running,completed,cancelled',
         ];
     }
 }

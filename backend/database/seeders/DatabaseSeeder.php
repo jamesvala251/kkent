@@ -30,8 +30,8 @@ class DatabaseSeeder extends Seeder
     {
         $roles = ['Super Admin', 'Admin', 'Manager', 'Accountant', 'Operator', 'Driver'];
         $modules = [
-            'customers', 'drivers', 'trucks', 'hitachi', 'trips', 'expenses', 'diesel',
-            'salaries', 'invoices', 'challans', 'maintenance', 'reports', 'settings', 'roles',
+            'dashboard', 'customers', 'drivers', 'trucks', 'hitachi', 'trips', 'expenses', 'diesel',
+            'salaries', 'invoices', 'challans', 'reports', 'settings', 'users', 'roles',
         ];
         $actions = ['view', 'create', 'edit', 'delete', 'export', 'print'];
 
@@ -43,8 +43,8 @@ class DatabaseSeeder extends Seeder
 
         foreach ($roles as $roleName) {
             $role = Role::firstOrCreate(['name' => $roleName]);
-            if ($roleName === 'Super Admin') {
-                $role->givePermissionTo(Permission::all());
+            if (in_array($roleName, ['Super Admin', 'Admin'], true)) {
+                $role->syncPermissions(Permission::all());
             }
         }
     }

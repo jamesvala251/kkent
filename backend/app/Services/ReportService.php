@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\Driver;
 use App\Models\Expense;
+use App\Models\HitachiRental;
 use App\Models\Invoice;
-use App\Models\Salary;
+use App\Models\SalaryAdvance;
 use App\Models\Trip;
 use App\Models\Truck;
 use Carbon\Carbon;
@@ -46,7 +48,6 @@ class ReportService
             'total_freight' => (float) $t->total_freight,
             'total_expense' => (float) $t->total_expense,
             'profit' => (float) $t->profit,
-            'status' => $t->status,
         ])->values()->all();
 
         return [
@@ -70,7 +71,6 @@ class ReportService
                 ['key' => 'total_freight', 'label' => 'Freight', 'format' => 'currency'],
                 ['key' => 'total_expense', 'label' => 'Expense', 'format' => 'currency'],
                 ['key' => 'profit', 'label' => 'Profit', 'format' => 'currency'],
-                ['key' => 'status', 'label' => 'Status'],
             ],
             'rows' => $rows,
             'chart' => $this->weeklyChart($trips, 'start_date', 'profit', 'Profit by Week'),
@@ -79,18 +79,21 @@ class ReportService
 
     private function profitLoss(string $dateFrom, string $dateTo): array
     {
-        $trips = Trip::where('status', 'completed')
-            ->whereDate('end_date', '>=', $dateFrom)
-            ->whereDate('end_date', '<=', $dateTo)
+        $trips = Trip::whereDate('start_date', '>=', $dateFrom)
+            ->whereDate('start_date', '<=', $dateTo)
             ->get();
 
         $expenses = Expense::whereDate('expense_date', '>=', $dateFrom)
             ->whereDate('expense_date', '<=', $dateTo)
             ->sum('amount');
 
-        $tripExpense = $trips->sum('total_expense');
-        $totalFreight = $trips->sum('total_freight');
-        $totalExpense = $expenses + $tripExpense;
+        $rentalRevenue = HitachiRental::where('status', 'completed')
+            ->whereDate('end_date', '>=', $dateFrom)
+            ->whereDate('end_date', '<=', $dateTo)
+            ->sum('total_amount');
+
+        $totalFreight = $trips->sum('total_freight') + $rentalRevenue;
+        $totalExpense = $expenses;
         $netProfit = $totalFreight - $totalExpense;
 
         $rows = $trips->map(fn ($t) => [
@@ -107,9 +110,8 @@ class ReportService
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
             'summary' => [
-                ['label' => 'Revenue (Freight)', 'value' => round($totalFreight, 2)],
-                ['label' => 'Trip Expenses', 'value' => round($tripExpense, 2)],
-                ['label' => 'Other Expenses', 'value' => round($expenses, 2)],
+                ['label' => 'Revenue (Freight + Rentals)', 'value' => round($totalFreight, 2)],
+                ['label' => 'Operating Expenses', 'value' => round($expenses, 2)],
                 ['label' => 'Net Profit', 'value' => round($netProfit, 2)],
             ],
             'columns' => [
@@ -176,42 +178,48 @@ class ReportService
 
     private function salaryReport(string $dateFrom, string $dateTo): array
     {
-        $from = Carbon::parse($dateFrom);
-        $to = Carbon::parse($dateTo);
+        $from = Carbon::parse($dateFrom)->startOfDay();
+        $to = Carbon::parse($dateTo)->endOfDay();
+        $months = max(1, $from->copy()->startOfMonth()->diffInMonths($to->copy()->startOfMonth()) + 1);
 
-        $salaries = Salary::with('driver')
-            ->where(function ($q) use ($from, $to) {
-                $q->where(function ($inner) use ($from, $to) {
-                    $inner->where('year', '>', $from->year)
-                        ->orWhere(function ($y) use ($from) {
-                            $y->where('year', $from->year)->where('month', '>=', $from->month);
-                        });
-                })->where(function ($inner) use ($from, $to) {
-                    $inner->where('year', '<', $to->year)
-                        ->orWhere(function ($y) use ($to) {
-                            $y->where('year', $to->year)->where('month', '<=', $to->month);
-                        });
-                });
-            })
-            ->orderByDesc('year')
-            ->orderByDesc('month')
-            ->get();
+        $drivers = Driver::query()->orderBy('name')->get(['id', 'name', 'salary_type', 'monthly_salary']);
 
-        $rows = $salaries->map(fn ($s) => [
-            'driver' => $s->driver?->name ?? '-',
-            'period' => sprintf('%02d/%d', $s->month, $s->year),
-            'salary_type' => $s->salary_type,
-            'base_amount' => (float) $s->base_amount,
-            'bonus' => (float) $s->bonus,
-            'penalty' => (float) $s->penalty,
-            'net_amount' => (float) $s->net_amount,
-            'payment_status' => $s->payment_status,
-        ])->values()->all();
+        $tripSalary = Trip::query()
+            ->whereDate('start_date', '>=', $from->toDateString())
+            ->whereDate('start_date', '<=', $to->toDateString())
+            ->selectRaw('driver_id, COALESCE(SUM(driver_salary), 0) as total')
+            ->groupBy('driver_id')
+            ->pluck('total', 'driver_id');
 
-        $byDriver = $salaries->groupBy('driver_id')
-            ->map(fn ($items) => round($items->sum('net_amount'), 2))
-            ->sortDesc()
-            ->take(10);
+        $advances = SalaryAdvance::query()
+            ->whereDate('advance_date', '>=', $from->toDateString())
+            ->whereDate('advance_date', '<=', $to->toDateString())
+            ->selectRaw('driver_id, COALESCE(SUM(amount), 0) as total')
+            ->groupBy('driver_id')
+            ->pluck('total', 'driver_id');
+
+        $rows = $drivers->map(function (Driver $driver) use ($tripSalary, $advances, $months) {
+            $monthly = round((float) ($driver->monthly_salary ?? 0) * $months, 2);
+            $trip = round((float) ($tripSalary[$driver->id] ?? 0), 2);
+            $advance = round((float) ($advances[$driver->id] ?? 0), 2);
+            $type = $driver->salary_type ?: 'monthly';
+            $earned = match ($type) {
+                'per_trip' => $trip,
+                'both' => round($monthly + $trip, 2),
+                default => $monthly,
+            };
+
+            return [
+                'driver' => $driver->name,
+                'salary_type' => $type,
+                'earned_salary' => $earned,
+                'advanced_salary' => $advance,
+                'remaining_salary' => round($earned - $advance, 2),
+            ];
+        })->filter(fn ($row) => $row['earned_salary'] > 0 || $row['advanced_salary'] > 0)
+            ->values();
+
+        $top = $rows->sortByDesc('earned_salary')->take(10);
 
         return [
             'title' => 'Salary Report',
@@ -219,23 +227,23 @@ class ReportService
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
             'summary' => [
-                ['label' => 'Total Records', 'value' => $salaries->count()],
-                ['label' => 'Total Net Salary', 'value' => round($salaries->sum('net_amount'), 2)],
-                ['label' => 'Paid', 'value' => $salaries->where('payment_status', 'paid')->count()],
+                ['label' => 'Drivers', 'value' => $rows->count()],
+                ['label' => 'Total Salary', 'value' => round($rows->sum('earned_salary'), 2)],
+                ['label' => 'Total Advances', 'value' => round($rows->sum('advanced_salary'), 2)],
+                ['label' => 'Remaining', 'value' => round($rows->sum('remaining_salary'), 2)],
             ],
             'columns' => [
                 ['key' => 'driver', 'label' => 'Driver'],
-                ['key' => 'period', 'label' => 'Period'],
                 ['key' => 'salary_type', 'label' => 'Type'],
-                ['key' => 'base_amount', 'label' => 'Base', 'format' => 'currency'],
-                ['key' => 'net_amount', 'label' => 'Net', 'format' => 'currency'],
-                ['key' => 'payment_status', 'label' => 'Status'],
+                ['key' => 'earned_salary', 'label' => 'Earned', 'format' => 'currency'],
+                ['key' => 'advanced_salary', 'label' => 'Advances', 'format' => 'currency'],
+                ['key' => 'remaining_salary', 'label' => 'Remaining', 'format' => 'currency'],
             ],
-            'rows' => $rows,
+            'rows' => $rows->all(),
             'chart' => [
-                'categories' => $salaries->take(10)->map(fn ($s) => $s->driver?->name ?? 'Driver')->values()->all(),
+                'categories' => $top->pluck('driver')->values()->all(),
                 'series' => [
-                    ['name' => 'Net Salary', 'data' => $salaries->take(10)->map(fn ($s) => (float) $s->net_amount)->values()->all()],
+                    ['name' => 'Earned Salary', 'data' => $top->pluck('earned_salary')->values()->all()],
                 ],
             ],
         ];
@@ -427,7 +435,6 @@ class ReportService
             'truck' => $t->truck?->truck_number ?? '-',
             'driver' => $t->driver?->name ?? '-',
             'total_freight' => (float) $t->total_freight,
-            'status' => $t->status,
         ])->values()->all();
 
         return [
@@ -450,7 +457,6 @@ class ReportService
                 ['key' => 'truck', 'label' => 'Truck'],
                 ['key' => 'driver', 'label' => 'Driver'],
                 ['key' => 'total_freight', 'label' => 'Ton', 'format' => 'currency'],
-                ['key' => 'status', 'label' => 'Status'],
             ],
             'rows' => $rows,
             'chart' => $this->weeklyChart($trips, 'start_date', 'total_freight', 'Ton by Day'),

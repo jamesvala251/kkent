@@ -86,7 +86,7 @@ export default function RoleList() {
     <>
       <PageHeader
         title="Roles & Permissions"
-        subtitle="Create roles and assign module permissions"
+        subtitle="Create roles and assign module permissions. Then add users and pick a role for each login."
         breadcrumbs={[{ label: 'Roles & Permissions' }]}
         action={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/roles/new')}>

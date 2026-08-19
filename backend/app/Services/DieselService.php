@@ -7,6 +7,7 @@ use App\Models\DieselIssue;
 use App\Models\DieselPurchase;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\Trip;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -60,6 +61,9 @@ class DieselService
         }
         if (! empty($filters['hitachi_id'])) {
             $query->where('hitachi_id', $filters['hitachi_id']);
+        }
+        if (! empty($filters['trip_id'])) {
+            $query->where('trip_id', $filters['trip_id']);
         }
 
         return $query->paginate($filters['per_page'] ?? 15);
@@ -227,7 +231,7 @@ class DieselService
 
     public function createIssue(array $data): DieselIssue
     {
-        return DB::transaction(function () use ($data) {
+        $issue = DB::transaction(function () use ($data) {
             if (empty($data['truck_id']) && empty($data['hitachi_id'])) {
                 throw ValidationException::withMessages([
                     'vehicle' => ['Select a truck or hitachi machine for diesel issue.'],
@@ -261,10 +265,15 @@ class DieselService
                 'notes' => $data['notes'] ?? null,
             ]);
         });
+
+        $this->syncTripDiesel($issue->trip_id);
+
+        return $issue;
     }
 
     public function deleteIssue(DieselIssue $issue): void
     {
+        $tripId = $issue->trip_id;
         DB::transaction(function () use ($issue) {
             foreach ($issue->purchase_allocations ?? [] as $allocation) {
                 DieselPurchase::where('id', $allocation['purchase_id'])
@@ -273,6 +282,7 @@ class DieselService
 
             $issue->delete();
         });
+        $this->syncTripDiesel($tripId);
     }
 
     public function getAvailablePurchases()
@@ -355,5 +365,36 @@ class DieselService
         }
 
         return $totalQty > 0 ? round($totalValue / $totalQty, 2) : 0;
+    }
+
+    private function syncTripDiesel(mixed $tripId): void
+    {
+        if (empty($tripId)) {
+            return;
+        }
+
+        $trip = Trip::find($tripId);
+        if (! $trip) {
+            return;
+        }
+
+        $issues = DieselIssue::where('trip_id', $trip->id)->get();
+        $qty = (float) $issues->sum('quantity');
+        $amount = (float) $issues->sum('total_amount');
+        $rate = $qty > 0 ? round($amount / $qty, 2) : 0;
+
+        $trip->diesel_qty = round($qty, 2);
+        $trip->diesel_rate = $rate;
+        $trip->diesel_amount = round($amount, 2);
+        $trip->total_expense = round(
+            $amount
+            + (float) $trip->driver_salary
+            + (float) $trip->maintenance
+            + (float) $trip->toll
+            + (float) $trip->other_expense,
+            2
+        );
+        $trip->profit = round((float) $trip->total_freight - (float) $trip->total_expense, 2);
+        $trip->save();
     }
 }
