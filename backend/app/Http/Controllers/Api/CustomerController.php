@@ -17,8 +17,10 @@ class CustomerController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $customers = $this->customerService->list($request->all());
+        $payload = CustomerResource::collection($customers)->response()->getData(true);
+        $payload['summary'] = $this->customerService->summary();
 
-        return $this->success(CustomerResource::collection($customers)->response()->getData(true));
+        return $this->success($payload);
     }
 
     public function store(StoreCustomerRequest $request): JsonResponse

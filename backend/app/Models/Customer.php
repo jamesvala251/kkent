@@ -35,6 +35,11 @@ class Customer extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function hitachiRentals(): HasMany
+    {
+        return $this->hasMany(HitachiRental::class);
+    }
+
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');

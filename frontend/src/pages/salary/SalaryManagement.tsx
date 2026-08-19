@@ -106,9 +106,13 @@ export default function SalaryManagement() {
   );
 
   const reconTotals = useMemo(() => {
-    const trip = reconRows.reduce((sum, row) => sum + Number(row.total_trip_salary || 0), 0);
+    const salary = reconRows.reduce(
+      (sum, row) => sum + Number(row.total_salary ?? row.monthly_salary ?? row.total_trip_salary ?? 0),
+      0,
+    );
     const advanced = reconRows.reduce((sum, row) => sum + Number(row.total_advanced_salary || 0), 0);
-    return { trip, advanced, remaining: trip - advanced };
+    const remaining = reconRows.reduce((sum, row) => sum + Number(row.remaining_salary || 0), 0);
+    return { salary, advanced, remaining };
   }, [reconRows]);
 
   const handleSave = async () => {
@@ -134,6 +138,7 @@ export default function SalaryManagement() {
       setForm(emptyForm);
       setEditingId(null);
       loadAdvances();
+      loadReconciliation();
     } catch {
       // interceptor
     } finally {
@@ -160,6 +165,7 @@ export default function SalaryManagement() {
       toast.success('Advance salary deleted');
       setDeleteId(null);
       loadAdvances();
+      loadReconciliation();
     } catch {
       toast.error('Failed to delete record');
     } finally {
@@ -196,7 +202,29 @@ export default function SalaryManagement() {
   const reconColumns: Column<SalaryReconciliationRow>[] = useMemo(
     () => [
       { id: 'driver_name', label: 'Driver Name' },
-      { id: 'total_trip_salary', label: 'Total Trip Salary', align: 'right', format: (r) => money(r.total_trip_salary) },
+      {
+        id: 'salary_type',
+        label: 'Type',
+        format: (r) => (r.salary_type === 'per_trip' ? 'Per trip' : r.salary_type === 'both' ? 'Both' : 'Monthly'),
+      },
+      {
+        id: 'monthly_salary',
+        label: 'Monthly Salary',
+        align: 'right',
+        format: (r) => money(Number(r.monthly_salary || 0)),
+      },
+      {
+        id: 'total_trip_salary',
+        label: 'Trip Salary',
+        align: 'right',
+        format: (r) => money(r.total_trip_salary),
+      },
+      {
+        id: 'total_salary',
+        label: 'Total Salary',
+        align: 'right',
+        format: (r) => money(Number(r.total_salary ?? r.total_trip_salary)),
+      },
       { id: 'total_advanced_salary', label: 'Total Advanced Salary', align: 'right', format: (r) => money(r.total_advanced_salary) },
       {
         id: 'remaining_salary',
@@ -220,7 +248,7 @@ export default function SalaryManagement() {
         title={tab === 1 ? 'Monthly Salary Reconciliation' : 'Driver Salary Management'}
         subtitle={
           tab === 1
-            ? 'View total driver salary from trips and compare with advanced salary given to calculate remaining salary.'
+            ? 'Compares each driver’s monthly salary (and trip salary when paid per trip) with advances paid this month.'
             : 'Record advance salary paid to drivers'
         }
         breadcrumbs={[{ label: 'Salary' }]}
@@ -408,7 +436,7 @@ export default function SalaryManagement() {
             defaultRowsPerPage={25}
             footer={{
               driver_name: 'Total',
-              total_trip_salary: money(reconTotals.trip),
+              total_salary: money(reconTotals.salary),
               total_advanced_salary: money(reconTotals.advanced),
               remaining_salary: money(reconTotals.remaining),
             }}
@@ -429,7 +457,7 @@ export default function SalaryManagement() {
             }}
           >
             <Typography variant="subtitle1" fontWeight={700}>
-              Total Trip Salary: {money(reconTotals.trip)}
+              Total Salary: {money(reconTotals.salary)}
             </Typography>
             <Typography variant="subtitle1" fontWeight={700} color="text.secondary">
               Total Advance: {money(reconTotals.advanced)}

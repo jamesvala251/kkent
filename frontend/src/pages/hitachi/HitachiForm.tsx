@@ -10,6 +10,7 @@ import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
+import DocumentPanel from '../../components/common/DocumentPanel';
 import { createItem, fetchOne, updateItem } from '../../services/resourceService';
 import type { HitachiMachine } from '../../types';
 
@@ -34,6 +35,7 @@ const schema = yup.object({
   hourly_rate: yup.number().transform((_v, o) => toNumber(o, 0)).optional(),
   daily_rate: yup.number().transform((_v, o) => toNumber(o, 0)).optional(),
   monthly_rate: yup.number().transform((_v, o) => toNumber(o, 0)).optional(),
+  status: yup.string().required(),
 });
 
 interface HitachiFormData {
@@ -51,6 +53,7 @@ interface HitachiFormData {
   hourly_rate?: number;
   daily_rate?: number;
   monthly_rate?: number;
+  status: string;
 }
 
 const toDateInput = (value?: string) => (value ? value.split('T')[0] : '');
@@ -76,6 +79,7 @@ export default function HitachiForm() {
       hourly_rate: 0,
       daily_rate: 0,
       monthly_rate: 0,
+      status: 'active',
     },
   });
 
@@ -99,6 +103,7 @@ export default function HitachiForm() {
           hourly_rate: data.hourly_rate != null ? Number(data.hourly_rate) : 0,
           daily_rate: data.daily_rate != null ? Number(data.daily_rate) : 0,
           monthly_rate: data.monthly_rate != null ? Number(data.monthly_rate) : 0,
+          status: data.status ?? 'active',
         });
       }
       setLoadingData(false);
@@ -111,7 +116,7 @@ export default function HitachiForm() {
   };
 
   const onSubmit = async (data: HitachiFormData) => {
-    const payload: Partial<HitachiMachine> = isEdit ? data : { ...data, status: 'active' };
+    const payload: Partial<HitachiMachine> = data;
     try {
       if (isEdit && id) {
         await updateItem<HitachiMachine>('/hitachi-machines', id, payload);
@@ -186,6 +191,14 @@ export default function HitachiForm() {
                   <MenuItem value="electric">Electric</MenuItem>
                 </TextField>
               </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField {...register('status')} label="Status" select fullWidth value={watch('status') ?? 'active'}>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem value="maintenance">Maintenance</MenuItem>
+                  <MenuItem value="breakdown">Breakdown</MenuItem>
+                </TextField>
+              </Grid>
             </Grid>
 
             <Divider sx={{ my: 3 }} />
@@ -210,6 +223,17 @@ export default function HitachiForm() {
           </Box>
         </CardContent>
       </Card>
+
+      {isEdit && id && (
+        <Card sx={{ mt: 2.5 }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }} gutterBottom>
+              Documents
+            </Typography>
+            <DocumentPanel type="hitachi" entityId={Number(id)} />
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

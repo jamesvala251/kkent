@@ -10,6 +10,7 @@ import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
+import DocumentPanel from '../../components/common/DocumentPanel';
 import { createItem, fetchOne, updateItem } from '../../services/resourceService';
 import type { Truck } from '../../types';
 
@@ -29,6 +30,7 @@ const schema = yup.object({
   fuel_type: yup.string().required('Fuel type is required'),
   gps_number: yup.string(),
   current_km: yup.number().transform((v) => (Number.isNaN(v) ? 0 : v)).optional(),
+  status: yup.string().required(),
 });
 
 interface TruckFormData {
@@ -47,6 +49,7 @@ interface TruckFormData {
   fuel_type: string;
   gps_number?: string;
   current_km?: number;
+  status: string;
 }
 
 const toDateInput = (value?: string) => (value ? value.split('T')[0] : '');
@@ -68,6 +71,7 @@ export default function TruckForm() {
     defaultValues: {
       fuel_type: 'diesel',
       current_km: 0,
+      status: 'active',
     },
   });
 
@@ -92,6 +96,7 @@ export default function TruckForm() {
             fuel_type: data.fuel_type ?? 'diesel',
             gps_number: data.gps_number ?? '',
             current_km: data.current_km != null ? Number(data.current_km) : 0,
+            status: data.status ?? 'active',
           });
         } else {
           toast.error('Failed to load truck');
@@ -102,7 +107,7 @@ export default function TruckForm() {
   }, [id, isEdit, reset]);
 
   const onSubmit = async (data: TruckFormData) => {
-    const payload: Partial<Truck> = isEdit ? data : { ...data, status: 'active' };
+    const payload: Partial<Truck> = data;
     try {
       if (isEdit && id) {
         await updateItem<Truck>('/trucks', id, payload);
@@ -188,6 +193,22 @@ export default function TruckForm() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField {...register('gps_number')} label="GPS Number" fullWidth margin="normal" />
               </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  {...register('status')}
+                  label="Status"
+                  select
+                  fullWidth
+                  margin="normal"
+                  value={watch('status') ?? 'active'}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                >
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem value="maintenance">Maintenance</MenuItem>
+                  <MenuItem value="breakdown">Breakdown</MenuItem>
+                </TextField>
+              </Grid>
             </Grid>
 
             <Divider sx={{ my: 3 }} />
@@ -255,6 +276,17 @@ export default function TruckForm() {
           </Box>
         </CardContent>
       </Card>
+
+      {isEdit && id && (
+        <Card sx={{ mt: 2.5 }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Documents
+            </Typography>
+            <DocumentPanel type="truck" entityId={Number(id)} />
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

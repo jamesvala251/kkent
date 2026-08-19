@@ -12,6 +12,7 @@ import AuthLayout from '../../layouts/AuthLayout';
 import { useAppDispatch } from '../../hooks/redux';
 import { loginSuccess, setLoading } from '../../store/slices/authSlice';
 import { authService } from '../../services/authService';
+import { getHomePath } from '../../utils/permissions';
 
 const schema = yup.object({
   email: yup.string().email('Enter a valid email').required('Email is required'),
@@ -38,7 +39,7 @@ export default function Login() {
       const response = await authService.login(data);
       dispatch(loginSuccess(response));
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate(getHomePath(response.user));
     } catch (err) {
       const message =
         err instanceof Error && 'response' in err

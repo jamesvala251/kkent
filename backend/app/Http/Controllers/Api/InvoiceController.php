@@ -95,6 +95,7 @@ class InvoiceController extends ApiController
         $data = $this->normalizeSourceLinks($data);
         $tripIds = $this->resolveTripIds($data);
         $this->assertTripsBillable($tripIds, (int) $data['customer_id']);
+        $this->assertRentalBillable($data['hitachi_rental_id'] ?? null);
 
         unset($data['trip_ids']);
         $data['extra_charges'] = $this->sanitizeExtraCharges($data['extra_charges'] ?? []);
@@ -103,6 +104,7 @@ class InvoiceController extends ApiController
         $data['billing_month'] = $tripIds ? ($data['billing_month'] ?? $this->monthFromTrips($tripIds)) : null;
         $data['subtotal'] = $this->computeSubtotal($data, $tripIds);
         $data = array_merge($data, $this->applyGstCalculations($data));
+        $data = $this->applyPaymentStatus($data);
 
         $invoice = DB::transaction(function () use ($data, $tripIds) {
             $invoice = Invoice::create($data);
@@ -134,6 +136,10 @@ class InvoiceController extends ApiController
             ? $this->resolveTripIds(array_merge($invoice->only(['trip_id', 'hitachi_rental_id', 'customer_id']), $data))
             : $invoice->trips()->pluck('trips.id')->all();
         $this->assertTripsBillable($tripIds, $customerId, $invoice->id);
+        $this->assertRentalBillable(
+            array_key_exists('hitachi_rental_id', $data) ? ($data['hitachi_rental_id'] ?? null) : $invoice->hitachi_rental_id,
+            $invoice->id
+        );
 
         unset($data['trip_ids']);
         $data['trip_id'] = $tripIds[0] ?? null;
@@ -154,6 +160,7 @@ class InvoiceController extends ApiController
             'igst_rate' => array_key_exists('igst_rate', $data) ? $data['igst_rate'] : $invoice->igst_rate,
         ];
         $data = array_merge($data, $this->applyGstCalculations($gstSource));
+        $data = $this->applyPaymentStatus($data, $invoice);
 
         $old = $invoice->toArray();
         DB::transaction(function () use ($invoice, $data, $tripIds) {
@@ -353,6 +360,13 @@ class InvoiceController extends ApiController
         $sgstRate = (float) ($data['sgst_rate'] ?? 0);
         $igstRate = (float) ($data['igst_rate'] ?? 0);
 
+        if ($igstRate > 0) {
+            $cgstRate = 0;
+            $sgstRate = 0;
+        } elseif ($cgstRate > 0 || $sgstRate > 0) {
+            $igstRate = 0;
+        }
+
         $cgst = round($subtotal * $cgstRate / 100, 2);
         $sgst = round($subtotal * $sgstRate / 100, 2);
         $igst = round($subtotal * $igstRate / 100, 2);
@@ -367,6 +381,46 @@ class InvoiceController extends ApiController
             'igst' => $igst,
             'total_amount' => round($subtotal + $cgst + $sgst + $igst, 2),
         ];
+    }
+
+    private function applyPaymentStatus(array $data, ?Invoice $invoice = null): array
+    {
+        $total = (float) ($data['total_amount'] ?? $invoice?->total_amount ?? 0);
+        $paid = (float) ($data['paid_amount'] ?? $invoice?->paid_amount ?? 0);
+        $explicit = $data['payment_status'] ?? $invoice?->payment_status;
+
+        if ($explicit === 'paid' && $paid <= 0) {
+            $paid = $total;
+            $data['paid_amount'] = round($total, 2);
+        }
+
+        if ($paid <= 0) {
+            $data['payment_status'] = $explicit === 'overdue' ? 'overdue' : 'pending';
+        } elseif ($paid + 0.009 >= $total) {
+            $data['payment_status'] = 'paid';
+            $data['paid_amount'] = round($total, 2);
+        } else {
+            $data['payment_status'] = 'partial';
+        }
+
+        return $data;
+    }
+
+    private function assertRentalBillable(mixed $rentalId, ?int $exceptInvoiceId = null): void
+    {
+        if (empty($rentalId)) {
+            return;
+        }
+
+        $query = Invoice::query()->where('hitachi_rental_id', $rentalId);
+        if ($exceptInvoiceId) {
+            $query->where('id', '!=', $exceptInvoiceId);
+        }
+        if ($query->exists()) {
+            throw ValidationException::withMessages([
+                'hitachi_rental_id' => 'This Hitachi rental already has an invoice.',
+            ]);
+        }
     }
 
     private function generateInvoiceNumber(): string

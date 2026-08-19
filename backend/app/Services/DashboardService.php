@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\DieselIssue;
 use App\Models\Driver;
 use App\Models\Expense;
 use App\Models\HitachiMachine;
+use App\Models\HitachiRental;
 use App\Models\Invoice;
-use App\Models\MaintenanceRecord;
 use App\Models\Salary;
 use App\Models\Trip;
 use App\Models\Truck;
@@ -21,18 +22,25 @@ class DashboardService
         $monthStart = Carbon::now()->startOfMonth();
         $monthEnd = Carbon::now()->endOfMonth();
 
-        $monthlyIncome = Trip::where('status', 'completed')
-            ->whereBetween('end_date', [$monthStart, $monthEnd])
+        $tripIncome = Trip::query()
+            ->where(function ($query) use ($monthStart, $monthEnd) {
+                $query->whereBetween('end_date', [$monthStart, $monthEnd])
+                    ->orWhere(function ($inner) use ($monthStart, $monthEnd) {
+                        $inner->whereNull('end_date')->whereBetween('start_date', [$monthStart, $monthEnd]);
+                    });
+            })
             ->sum('total_freight');
+
+        $rentalIncome = HitachiRental::where('status', 'completed')
+            ->whereBetween('end_date', [$monthStart, $monthEnd])
+            ->sum('total_amount');
+
+        $monthlyIncome = $tripIncome + $rentalIncome;
 
         $monthlyExpenses = Expense::whereBetween('expense_date', [$monthStart, $monthEnd])
             ->sum('amount');
 
-        $tripExpenses = Trip::where('status', 'completed')
-            ->whereBetween('end_date', [$monthStart, $monthEnd])
-            ->sum('total_expense');
-
-        $totalMonthlyExpenses = $monthlyExpenses + $tripExpenses;
+        $totalMonthlyExpenses = $monthlyExpenses;
 
         return [
             'total_customers' => Customer::where('status', 'active')->count(),
@@ -40,7 +48,6 @@ class DashboardService
             'total_hitachi' => HitachiMachine::where('status', 'active')->count(),
             'active_drivers' => Driver::where('status', 'active')->count(),
             'total_trips' => Trip::count(),
-            'trips_running' => Trip::where('status', 'running')->count(),
             'pending_invoices' => Invoice::where('payment_status', 'pending')->count(),
             'today_expenses' => Expense::whereDate('expense_date', $today)->sum('amount'),
             'monthly_income' => round($monthlyIncome, 2),
@@ -56,7 +63,7 @@ class DashboardService
         $monthlyRevenue = $months->map(function ($date) {
             return [
                 'month' => $date->format('M Y'),
-                'amount' => Trip::where('status', 'completed')
+                'amount' => Trip::query()
                     ->whereYear('end_date', $date->year)
                     ->whereMonth('end_date', $date->month)
                     ->sum('total_freight'),
@@ -64,19 +71,14 @@ class DashboardService
         });
 
         $monthlyExpense = $months->map(function ($date) {
-            $expenses = Expense::whereYear('expense_date', $date->year)
-                ->whereMonth('expense_date', $date->month)
-                ->sum('amount');
+                $expenses = Expense::whereYear('expense_date', $date->year)
+                    ->whereMonth('expense_date', $date->month)
+                    ->sum('amount');
 
-            $tripExp = Trip::where('status', 'completed')
-                ->whereYear('end_date', $date->year)
-                ->whereMonth('end_date', $date->month)
-                ->sum('total_expense');
-
-            return [
-                'month' => $date->format('M Y'),
-                'amount' => $expenses + $tripExp,
-            ];
+                return [
+                    'month' => $date->format('M Y'),
+                    'amount' => $expenses,
+                ];
         });
 
         $tripsPerMonth = $months->map(function ($date) {
@@ -89,29 +91,33 @@ class DashboardService
         });
 
         $dieselConsumption = $months->map(function ($date) {
+            $issueQty = DieselIssue::whereYear('issue_date', $date->year)
+                ->whereMonth('issue_date', $date->month)
+                ->sum('quantity');
+            $issuedTripIds = DieselIssue::whereNotNull('trip_id')->pluck('trip_id');
+            $orphanQty = Trip::whereYear('start_date', $date->year)
+                ->whereMonth('start_date', $date->month)
+                ->when($issuedTripIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $issuedTripIds))
+                ->sum('diesel_qty');
+
             return [
                 'month' => $date->format('M Y'),
-                'qty' => Trip::whereYear('start_date', $date->year)
-                    ->whereMonth('start_date', $date->month)
-                    ->sum('diesel_qty'),
+                'qty' => round((float) $issueQty + (float) $orphanQty, 2),
             ];
         });
 
         $vehicleIncome = Truck::withSum(['trips as income' => function ($q) {
-            $q->where('status', 'completed')
-                ->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+            $q->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
         }], 'total_freight')
             ->limit(10)
             ->get()
             ->map(fn ($t) => ['vehicle' => $t->truck_number, 'income' => $t->income ?? 0]);
 
         $driverPerformance = Driver::withCount(['trips as completed_trips' => function ($q) {
-            $q->where('status', 'completed')
-                ->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+            $q->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
         }])
             ->withSum(['trips as total_freight' => function ($q) {
-                $q->where('status', 'completed')
-                    ->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                $q->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
             }], 'total_freight')
             ->where('status', 'active')
             ->limit(10)
@@ -129,12 +135,6 @@ class DashboardService
             'diesel_consumption' => $dieselConsumption,
             'vehicle_income' => $vehicleIncome,
             'driver_performance' => $driverPerformance,
-            'trip_status' => [
-                'completed' => Trip::where('status', 'completed')->count(),
-                'running' => Trip::where('status', 'running')->count(),
-                'pending' => Trip::where('status', 'pending')->count(),
-                'cancelled' => Trip::where('status', 'cancelled')->count(),
-            ],
         ];
     }
 
@@ -142,13 +142,7 @@ class DashboardService
     {
         return [
             'running_trips' => Trip::with(['customer', 'truck', 'driver'])
-                ->where('status', 'running')
                 ->latest()
-                ->limit(10)
-                ->get(),
-            'upcoming_maintenance' => MaintenanceRecord::where('status', 'scheduled')
-                ->where('next_service_date', '>=', Carbon::today())
-                ->orderBy('next_service_date')
                 ->limit(10)
                 ->get(),
             'driver_salary_due' => Salary::with('driver')

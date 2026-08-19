@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import RouteIcon from '@mui/icons-material/Route';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
@@ -30,12 +30,6 @@ interface DashboardStatsResponse {
 interface DashboardChartsResponse {
   monthly_revenue?: { month: string; amount: number }[];
   monthly_expense?: { month: string; amount: number }[];
-  trip_status?: {
-    completed: number;
-    running: number;
-    pending: number;
-    cancelled: number;
-  };
 }
 
 const emptyStats: DashboardStats = {
@@ -55,7 +49,6 @@ export default function Dashboard() {
   const [revenueMonths, setRevenueMonths] = useState<string[]>([]);
   const [revenueData, setRevenueData] = useState<number[]>([]);
   const [profitData, setProfitData] = useState<number[]>([]);
-  const [tripStatusSeries, setTripStatusSeries] = useState<number[]>([0, 0, 0, 0]);
 
   useEffect(() => {
     const load = async () => {
@@ -90,14 +83,6 @@ export default function Dashboard() {
           }),
         );
 
-        const tripStatus = chartsData.trip_status;
-        setTripStatusSeries([
-          tripStatus?.completed ?? 0,
-          tripStatus?.running ?? 0,
-          tripStatus?.pending ?? 0,
-          tripStatus?.cancelled ?? 0,
-        ]);
-
         setRecentTrips(trips);
       } catch {
         setStats(emptyStats);
@@ -105,7 +90,6 @@ export default function Dashboard() {
         setRevenueMonths([]);
         setRevenueData([]);
         setProfitData([]);
-        setTripStatusSeries([0, 0, 0, 0]);
       }
       setLoading(false);
     };
@@ -142,34 +126,6 @@ export default function Dashboard() {
     [revenueData, profitData],
   );
 
-  const tripStatusOptions: ApexOptions = useMemo(
-    () => ({
-      chart: { type: 'donut' },
-      labels: ['Completed', 'Running', 'Pending', 'Cancelled'],
-      colors: [
-        theme.palette.success.main,
-        theme.palette.info.main,
-        theme.palette.warning.main,
-        theme.palette.error.main,
-      ],
-      legend: { position: 'bottom' },
-      plotOptions: {
-        pie: {
-          donut: {
-            labels: {
-              show: true,
-              total: {
-                show: true,
-                label: 'Total Trips',
-              },
-            },
-          },
-        },
-      },
-    }),
-    [theme],
-  );
-
   const tripColumns: Column<Trip>[] = [
     { id: 'trip_number', label: 'Trip #', minWidth: 120 },
     { id: 'from_location', label: 'From' },
@@ -182,17 +138,6 @@ export default function Dashboard() {
       format: (row) => formatCurrency(row.total_freight || 0),
     },
     { id: 'profit', label: 'Profit', align: 'right', format: (row) => formatCurrency(row.profit || 0) },
-    {
-      id: 'status',
-      label: 'Status',
-      format: (row) => (
-        <Chip
-          label={row.status.replace('_', ' ')}
-          size="small"
-          color={row.status === 'completed' ? 'success' : row.status === 'running' ? 'info' : 'warning'}
-        />
-      ),
-    },
   ];
 
   if (loading) return <LoadingSkeleton />;
@@ -223,23 +168,13 @@ export default function Dashboard() {
       </Grid>
 
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, lg: 8 }}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600 }} gutterBottom>
                 Revenue & Profit Trend
               </Typography>
               <Chart options={revenueChartOptions} series={revenueSeries} type="area" height={320} />
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600 }} gutterBottom>
-                Trip Status
-              </Typography>
-              <Chart options={tripStatusOptions} series={tripStatusSeries} type="donut" height={320} />
             </CardContent>
           </Card>
         </Grid>

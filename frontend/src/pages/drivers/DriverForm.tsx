@@ -10,6 +10,7 @@ import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
+import DocumentPanel from '../../components/common/DocumentPanel';
 import { createItem, fetchList, fetchOne, updateItem } from '../../services/resourceService';
 import type { Driver, Truck } from '../../types';
 
@@ -318,6 +319,17 @@ export default function DriverForm() {
           </Box>
         </CardContent>
       </Card>
+
+      {isEdit && id && (
+        <Card sx={{ mt: 2.5 }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Documents
+            </Typography>
+            <DocumentPanel type="driver" entityId={Number(id)} />
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

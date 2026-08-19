@@ -2,15 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, IconButton, MenuItem, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable, { type Column } from '../../components/common/DataTable';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import FilterPanel, { FilterField } from '../../components/common/FilterPanel';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
 import api from '../../services/api';
-import { fetchList, formatCurrency, formatDate } from '../../services/resourceService';
+import { deleteItem, fetchList, formatCurrency, formatDate } from '../../services/resourceService';
 import { buildFilterParams, type FilterValues } from '../../utils/listFilters';
 import type { Customer, Driver, Trip, Truck } from '../../types';
+import { toast } from 'react-toastify';
 
 type TripSummary = {
   total_amount: number;
@@ -43,6 +47,8 @@ export default function TripList() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [summary, setSummary] = useState<TripSummary>(emptySummary);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -80,6 +86,21 @@ export default function TripList() {
     load();
   }, [load]);
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await deleteItem('/trips', deleteId);
+      toast.success('Trip deleted');
+      setDeleteId(null);
+      load();
+    } catch {
+      toast.error('Failed to delete trip');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const columns: Column<Trip>[] = [
     { id: 'trip_number', label: 'Trip #', minWidth: 130 },
     { id: 'from_location', label: 'From' },
@@ -93,12 +114,20 @@ export default function TripList() {
     { id: 'profit', label: 'Profit', align: 'right', format: (r) => formatCurrency(r.profit || 0) },
     {
       id: 'actions',
-      label: '',
+      label: 'Actions',
       align: 'right',
       format: (r) => (
-        <IconButton size="small" onClick={() => navigate(`/trips/${r.id}/edit`)}>
-          <EditIcon fontSize="small" />
-        </IconButton>
+        <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'inline-flex' }}>
+          <IconButton size="small" title="View" onClick={() => navigate(`/trips/${r.id}`)}>
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" title="Edit" onClick={() => navigate(`/trips/${r.id}/edit`)}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" color="error" title="Delete" onClick={() => setDeleteId(r.id)}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
       ),
     },
   ];
@@ -209,6 +238,7 @@ export default function TripList() {
         loading={loading}
         searchable={false}
         getRowId={(r) => r.id}
+        onRowClick={(r) => navigate(`/trips/${r.id}`)}
         footer={{
           trip_number: 'Total',
           total_freight: formatCurrency(summary.total_amount),
@@ -241,6 +271,14 @@ export default function TripList() {
           Profit: {formatCurrency(summary.total_profit)}
         </Typography>
       </Box>
+      <ConfirmDialog
+        open={deleteId !== null}
+        title="Delete Trip"
+        message="Are you sure you want to delete this trip? Linked invoice lines for this trip will also be removed."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+        loading={deleting}
+      />
     </>
   );
 }

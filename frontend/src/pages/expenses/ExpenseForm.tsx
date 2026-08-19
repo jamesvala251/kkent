@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -8,6 +8,8 @@ import {
   Link,
   MenuItem,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -30,7 +32,7 @@ import {
   updateWithFile,
 } from '../../services/resourceService';
 import api from '../../services/api';
-import type { Driver, Expense, ExpenseCategory, HitachiRental, Trip, Truck } from '../../types';
+import type { Driver, Expense, ExpenseCategory, HitachiMachine, HitachiRental, Trip, Truck } from '../../types';
 
 const toNumber = (value: unknown, fallback?: number) => {
   if (value === '' || value === null || value === undefined) return fallback;
@@ -60,6 +62,7 @@ const schema = yup.object({
   truck_id: optionalId(),
   driver_id: optionalId(),
   trip_id: optionalId(),
+  hitachi_id: optionalId(),
   hitachi_rental_id: optionalId(),
 });
 
@@ -71,19 +74,34 @@ interface ExpenseFormData {
   truck_id?: number | null;
   driver_id?: number | null;
   trip_id?: number | null;
+  hitachi_id?: number | null;
   hitachi_rental_id?: number | null;
+}
+
+type ExpenseKind = 'truck' | 'hitachi' | 'other';
+
+function inferKind(data: Partial<Expense>): ExpenseKind {
+  if (data.hitachi_id || data.hitachi_rental_id || data.hitachi || data.hitachi_rental) return 'hitachi';
+  if (data.truck_id || data.trip_id || data.driver_id) return 'truck';
+  return 'other';
 }
 
 export default function ExpenseForm() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id && id !== 'new');
+  const requestedKind = searchParams.get('kind');
+  const [kind, setKind] = useState<ExpenseKind>(
+    requestedKind === 'hitachi' || requestedKind === 'other' || requestedKind === 'truck' ? requestedKind : 'truck',
+  );
   const [loadingData, setLoadingData] = useState(true);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [hitachiRentals, setHitachiRentals] = useState<HitachiRental[]>([]);
+  const [hitachiMachines, setHitachiMachines] = useState<HitachiMachine[]>([]);
+  const [rentals, setRentals] = useState<HitachiRental[]>([]);
   const [billFile, setBillFile] = useState<File | null>(null);
   const [existingBillPath, setExistingBillPath] = useState<string | null>(null);
 
@@ -91,6 +109,7 @@ export default function ExpenseForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm<ExpenseFormData>({
@@ -107,11 +126,12 @@ export default function ExpenseForm() {
     let cancelled = false;
 
     const load = async () => {
-      const [categoriesRes, t, d, tripList, rentalList] = await Promise.all([
+      const [categoriesRes, t, d, tripList, machineList, rentalList] = await Promise.all([
         api.get<ExpenseCategory[]>('/expense-categories'),
         fetchList<Truck>('/trucks', { per_page: 500 }),
         fetchList<Driver>('/drivers', { per_page: 500 }),
         fetchList<Trip>('/trips', { per_page: 500 }),
+        fetchList<HitachiMachine>('/hitachi-machines', { per_page: 500 }),
         fetchList<HitachiRental>('/hitachi/rentals', { per_page: 500 }),
       ]);
       if (cancelled) return;
@@ -120,12 +140,14 @@ export default function ExpenseForm() {
       setTrucks(t);
       setDrivers(d);
       setTrips(tripList);
-      setHitachiRentals(rentalList);
+      setHitachiMachines(Array.isArray(machineList) ? machineList : []);
+      setRentals(Array.isArray(rentalList) ? rentalList : []);
 
       if (isEdit && id) {
         const data = await fetchOne<Expense>('/expenses', id);
         if (cancelled) return;
         if (data) {
+          const hitachiId = data.hitachi_id ?? data.hitachi_rental?.hitachi_id ?? data.hitachi_rental?.hitachi?.id;
           reset({
             expense_date: data.expense_date?.split('T')[0] ?? '',
             category_id: data.category_id,
@@ -134,12 +156,23 @@ export default function ExpenseForm() {
             truck_id: data.truck_id ?? undefined,
             driver_id: data.driver_id ?? undefined,
             trip_id: data.trip_id ?? undefined,
+            hitachi_id: hitachiId ?? undefined,
             hitachi_rental_id: data.hitachi_rental_id ?? undefined,
           });
           setExistingBillPath(data.bill_path ?? null);
+          setKind(inferKind(data));
         } else {
           toast.error('Failed to load expense');
         }
+      }
+
+      if (!isEdit) {
+        const truckId = Number(searchParams.get('truck_id')) || 0;
+        const hitachiId = Number(searchParams.get('hitachi_id')) || 0;
+        const tripId = Number(searchParams.get('trip_id')) || 0;
+        if (truckId) setValue('truck_id', truckId);
+        if (hitachiId) setValue('hitachi_id', hitachiId);
+        if (tripId) setValue('trip_id', tripId);
       }
 
       if (!cancelled) setLoadingData(false);
@@ -149,31 +182,73 @@ export default function ExpenseForm() {
     return () => {
       cancelled = true;
     };
-  }, [id, isEdit, reset]);
+  }, [id, isEdit, reset, searchParams, setValue]);
 
   const onInvalid = (formErrors: FieldErrors<ExpenseFormData>) => {
     const firstError = Object.values(formErrors).find((error) => error?.message);
     toast.error(firstError?.message ? String(firstError.message) : 'Please fill all required fields');
   };
 
-  const buildPayload = (data: ExpenseFormData): Partial<Expense> => ({
-    expense_date: data.expense_date,
-    category_id: data.category_id,
-    amount: data.amount,
-    description: data.description || undefined,
-    truck_id: data.truck_id ?? undefined,
-    driver_id: data.driver_id ?? undefined,
-    trip_id: data.trip_id ?? undefined,
-    hitachi_rental_id: data.hitachi_rental_id ?? undefined,
-  });
+  const applyKind = (next: ExpenseKind) => {
+    setKind(next);
+    if (next === 'hitachi') {
+      setValue('truck_id', null);
+      setValue('driver_id', null);
+      setValue('trip_id', null);
+    } else if (next === 'truck') {
+      setValue('hitachi_id', null);
+      setValue('hitachi_rental_id', null);
+    } else {
+      setValue('truck_id', null);
+      setValue('driver_id', null);
+      setValue('trip_id', null);
+      setValue('hitachi_id', null);
+      setValue('hitachi_rental_id', null);
+    }
+  };
+
+  const buildPayload = (data: ExpenseFormData): Partial<Expense> => {
+    const base = {
+      expense_date: data.expense_date,
+      category_id: data.category_id,
+      amount: data.amount,
+      description: data.description || undefined,
+    };
+    if (kind === 'hitachi') {
+      return {
+        ...base,
+        truck_id: null,
+        driver_id: null,
+        trip_id: null,
+        hitachi_id: data.hitachi_id ?? null,
+        hitachi_rental_id: data.hitachi_rental_id ?? null,
+      };
+    }
+    if (kind === 'truck') {
+      return {
+        ...base,
+        truck_id: data.truck_id ?? null,
+        driver_id: data.driver_id ?? null,
+        trip_id: data.trip_id ?? null,
+        hitachi_id: null,
+        hitachi_rental_id: null,
+      };
+    }
+    return {
+      ...base,
+      truck_id: null,
+      driver_id: null,
+      trip_id: null,
+      hitachi_id: null,
+      hitachi_rental_id: null,
+    };
+  };
 
   const buildFormData = (data: ExpenseFormData) => {
     const formData = new FormData();
     const payload = buildPayload(data);
     Object.entries(payload).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, String(value));
-      }
+      formData.append(key, value === null || value === undefined ? '' : String(value));
     });
     if (billFile) {
       formData.append('bill', billFile);
@@ -182,6 +257,10 @@ export default function ExpenseForm() {
   };
 
   const onSubmit = async (data: ExpenseFormData) => {
+    if (kind === 'hitachi' && !data.hitachi_id) {
+      toast.error('Select a Hitachi machine');
+      return;
+    }
     try {
       if (billFile) {
         const formData = buildFormData(data);
@@ -199,13 +278,14 @@ export default function ExpenseForm() {
         await createItem<Expense>('/expenses', buildPayload(data));
         toast.success('Expense created');
       }
-      navigate('/expenses');
+      navigate(`/expenses?tab=${kind}`);
     } catch {
       // API errors are surfaced by the axios interceptor
     }
   };
 
   const existingBillUrl = getStorageUrl(existingBillPath);
+  const machineRentals = rentals.filter((rental) => Number(rental.hitachi_id) === Number(watched.hitachi_id));
 
   if (loadingData) return <LoadingSkeleton variant="form" rows={8} />;
 
@@ -213,7 +293,7 @@ export default function ExpenseForm() {
     <Box>
       <PageHeader
         title={isEdit ? 'Edit Expense' : 'Add Expense'}
-        subtitle="Record operational, trip, or Hitachi rental expenses"
+        subtitle="Record a truck, Hitachi, or general expense"
         breadcrumbs={[{ label: 'Expenses', to: '/expenses' }, { label: isEdit ? 'Edit' : 'New' }]}
         action={
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/expenses')}>
@@ -226,6 +306,21 @@ export default function ExpenseForm() {
         <CardContent>
           <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
             <Grid container spacing={2}>
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Expense type</Typography>
+                <ToggleButtonGroup
+                  exclusive
+                  color="primary"
+                  value={kind}
+                  onChange={(_, value: ExpenseKind | null) => {
+                    if (value) applyKind(value);
+                  }}
+                >
+                  <ToggleButton value="truck">Truck / trip</ToggleButton>
+                  <ToggleButton value="hitachi">Hitachi</ToggleButton>
+                  <ToggleButton value="other">Other / general</ToggleButton>
+                </ToggleButtonGroup>
+              </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField
                   {...register('expense_date')}
@@ -264,6 +359,8 @@ export default function ExpenseForm() {
                   helperText={errors.amount?.message}
                 />
               </Grid>
+              {kind === 'truck' && (
+                <>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField {...register('truck_id')} label="Truck (Optional)" select fullWidth value={watched.truck_id ?? ''}>
                   <MenuItem value="">None</MenuItem>
@@ -294,18 +391,73 @@ export default function ExpenseForm() {
                   ))}
                 </TextField>
               </Grid>
+                </>
+              )}
+              {kind === 'hitachi' && (
+                <>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField {...register('hitachi_rental_id')} label="Hitachi Rental (Optional)" select fullWidth value={watched.hitachi_rental_id ?? ''}>
+                <TextField
+                  {...register('hitachi_id', {
+                    onChange: (e) => {
+                      const nextId = Number(e.target.value) || 0;
+                      const linked = rentals.find((rental) => rental.id === Number(watched.hitachi_rental_id));
+                      if (linked && Number(linked.hitachi_id) !== nextId) {
+                        setValue('hitachi_rental_id', null);
+                      }
+                    },
+                  })}
+                  label="Hitachi machine"
+                  select
+                  fullWidth
+                  value={watched.hitachi_id ?? ''}
+                >
                   <MenuItem value="">None</MenuItem>
-                  {hitachiRentals.map((rental) => (
-                    <MenuItem key={rental.id} value={rental.id}>
-                      {rental.rental_number}
-                      {rental.hitachi?.machine_number ? ` · ${rental.hitachi.machine_number}` : ''}
-                      {rental.customer?.name ? ` · ${rental.customer.name}` : ''}
+                  {hitachiMachines.map((machine) => (
+                    <MenuItem key={machine.id} value={machine.id}>
+                      {machine.machine_number}
+                      {machine.registration_number ? ` · ${machine.registration_number}` : ''}
+                      {machine.model ? ` · ${machine.model}` : ''}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Hitachi rental (Optional)"
+                  value={watched.hitachi_rental_id ?? ''}
+                  disabled={!watched.hitachi_id}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      setValue('hitachi_rental_id', null);
+                      return;
+                    }
+                    const rental = rentals.find((item) => item.id === Number(value));
+                    setValue('hitachi_rental_id', rental?.id ?? null);
+                    if (rental?.hitachi_id) setValue('hitachi_id', rental.hitachi_id);
+                  }}
+                  helperText={!watched.hitachi_id ? 'Select a Hitachi machine first' : 'Attach this cost to a rental'}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {machineRentals.map((rental) => (
+                    <MenuItem key={rental.id} value={rental.id}>
+                      {rental.rental_number}
+                      {rental.site_location ? ` · ${rental.site_location}` : ''}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+                </>
+              )}
+              {kind === 'other' && (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Other expenses are not linked to a truck, trip, or Hitachi machine — office, diesel stock, insurance, EMI, and similar costs.
+                  </Typography>
+                </Grid>
+              )}
               <Grid size={{ xs: 12 }}>
                 <TextField
                   {...register('description')}
@@ -316,17 +468,29 @@ export default function ExpenseForm() {
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <TextField
-                  type="file"
-                  label="Bill / Receipt"
-                  fullWidth
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  inputProps={{ accept: 'image/*,.pdf' }}
-                  onChange={(event) => {
-                    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-                    setBillFile(file);
-                  }}
-                />
+                <Typography variant="subtitle2" sx={{ mb: 0.75 }}>
+                  Bill / Receipt (optional)
+                </Typography>
+                <Button variant="outlined" component="label">
+                  {billFile ? billFile.name : 'Attach bill'}
+                  <input
+                    hidden
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(event) => {
+                      setBillFile(event.target.files?.[0] ?? null);
+                      event.target.value = '';
+                    }}
+                  />
+                </Button>
+                {billFile && (
+                  <Button sx={{ ml: 1 }} onClick={() => setBillFile(null)}>
+                    Remove
+                  </Button>
+                )}
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                  You can save this expense without a receipt.
+                </Typography>
                 {existingBillUrl && !billFile && (
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     Current bill:{' '}

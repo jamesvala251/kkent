@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Exports\GenericReportExport;
 use App\Models\CompanySetting;
+use App\Models\DieselIssue;
 use App\Models\Expense;
 use App\Models\Invoice;
-use App\Models\MaintenanceRecord;
-use App\Models\Salary;
 use App\Models\Trip;
 use App\Services\ReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -139,7 +138,7 @@ class ReportController extends ApiController
 
     public function profit(Request $request): JsonResponse
     {
-        $query = Trip::where('status', 'completed');
+        $query = Trip::query();
 
         if ($request->date_from) {
             $query->whereDate('end_date', '>=', $request->date_from);
@@ -177,31 +176,30 @@ class ReportController extends ApiController
 
     public function dieselConsumption(Request $request): JsonResponse
     {
-        $query = Trip::query();
+        $issues = DieselIssue::query()
+            ->when($request->date_from, fn ($query) => $query->whereDate('issue_date', '>=', $request->date_from))
+            ->when($request->date_to, fn ($query) => $query->whereDate('issue_date', '<=', $request->date_to));
 
-        if ($request->date_from) {
-            $query->whereDate('start_date', '>=', $request->date_from);
-        }
-        if ($request->date_to) {
-            $query->whereDate('start_date', '<=', $request->date_to);
-        }
+        $issuedTripIds = (clone $issues)->whereNotNull('trip_id')->pluck('trip_id');
+
+        $orphanTrips = Trip::query()
+            ->when($request->date_from, fn ($query) => $query->whereDate('start_date', '>=', $request->date_from))
+            ->when($request->date_to, fn ($query) => $query->whereDate('start_date', '<=', $request->date_to))
+            ->when($issuedTripIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $issuedTripIds));
 
         return $this->success([
-            'total_qty' => $query->sum('diesel_qty'),
-            'total_amount' => $query->sum('diesel_amount'),
-            'trips' => $query->with('truck')->paginate($request->get('per_page', 50)),
+            'total_qty' => round((clone $issues)->sum('quantity') + $orphanTrips->sum('diesel_qty'), 2),
+            'total_amount' => round((clone $issues)->sum('total_amount') + $orphanTrips->sum('diesel_amount'), 2),
+            'issues' => $issues->with(['truck', 'trip'])->paginate($request->get('per_page', 50)),
         ]);
     }
 
-    public function salary(Request $request): JsonResponse
+    public function salary(Request $request, ReportService $reportService): JsonResponse
     {
-        $query = Salary::with('driver');
+        $from = $request->date_from ?? now()->startOfMonth()->toDateString();
+        $to = $request->date_to ?? now()->endOfMonth()->toDateString();
 
-        if ($request->payment_status) {
-            $query->where('payment_status', $request->payment_status);
-        }
-
-        return $this->success($query->paginate($request->get('per_page', 50)));
+        return $this->success($reportService->generate('salary', $from, $to));
     }
 
     public function outstanding(Request $request): JsonResponse
@@ -225,19 +223,5 @@ class ReportController extends ApiController
         }
 
         return $this->success($query->paginate($request->get('per_page', 50)));
-    }
-
-    public function maintenance(Request $request): JsonResponse
-    {
-        $query = MaintenanceRecord::query();
-
-        if ($request->vehicle_type) {
-            $query->where('vehicle_type', $request->vehicle_type);
-        }
-
-        return $this->success([
-            'total_cost' => (clone $query)->sum('cost'),
-            'records' => $query->paginate($request->get('per_page', 50)),
-        ]);
     }
 }

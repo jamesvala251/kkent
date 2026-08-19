@@ -21,7 +21,7 @@ class Trip extends Model
         'weight', 'start_km', 'end_km', 'total_km', 'diesel_qty', 'diesel_rate',
         'diesel_amount', 'toll', 'maintenance', 'other_expense', 'driver_salary',
         'total_expense', 'freight', 'total_freight', 'advance_received', 'balance', 'profit',
-        'compressor', 'remarks', 'status',
+        'compressor', 'remarks',
         'created_by', 'updated_by', 'deleted_by',
     ];
 
@@ -74,6 +74,11 @@ class Trip extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    public function dieselIssues(): HasMany
+    {
+        return $this->hasMany(DieselIssue::class);
     }
 
     public function invoice(): HasOne

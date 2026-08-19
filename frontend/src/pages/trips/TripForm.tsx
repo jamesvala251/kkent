@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Autocomplete,
   Box,
@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useForm, useWatch, Controller, type FieldErrors, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -134,7 +135,9 @@ const calcTripDays = (start?: string | null, end?: string | null) => {
 export default function TripForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id && id !== 'new');
+  const location = useLocation();
+  const isView = Boolean(id && id !== 'new' && !location.pathname.endsWith('/edit'));
+  const isEdit = Boolean(id && id !== 'new' && location.pathname.endsWith('/edit'));
   const [loadingData, setLoadingData] = useState(true);
   const [autoTripNumber, setAutoTripNumber] = useState('');
 
@@ -178,6 +181,7 @@ export default function TripForm() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [machines, setMachines] = useState<HitachiMachine[]>([]);
   const [defaultDieselRate, setDefaultDieselRate] = useState<number | null>(null);
+  const [dieselFromStock, setDieselFromStock] = useState(false);
 
   const calculations = useMemo(() => {
     const total_km = calcTotalKm(watched.start_km, watched.end_km);
@@ -220,9 +224,13 @@ export default function TripForm() {
       const dieselPrice = Number(settingsData.diesel_default_price) || 0;
       setDefaultDieselRate(dieselPrice);
 
-      if (isEdit && id) {
-        const data = await fetchOne<Trip>('/trips', id);
+      if ((isEdit || isView) && id) {
+        const [data, issues] = await Promise.all([
+          fetchOne<Trip>('/trips', id),
+          fetchList('/diesel/issues', { trip_id: id, per_page: 5 }),
+        ]);
         if (cancelled) return;
+        setDieselFromStock(issues.length > 0);
         if (data) {
           setAutoTripNumber(data.trip_number);
           reset({
@@ -265,7 +273,7 @@ export default function TripForm() {
     return () => {
       cancelled = true;
     };
-  }, [id, isEdit, reset, setValue]);
+  }, [id, isEdit, isView, reset, setValue]);
 
   const onInvalid = (formErrors: FieldErrors<TripFormData>) => {
     const firstError = Object.values(formErrors).find((error) => error?.message);
@@ -273,14 +281,12 @@ export default function TripForm() {
   };
 
   const onSubmit = async (data: TripFormData) => {
+    if (isView) return;
     const payload: Partial<Trip> = {
       ...data,
       hitachi_id: data.hitachi_id ?? undefined,
       end_date: data.end_date || undefined,
     };
-    if (!isEdit) {
-      payload.status = 'pending';
-    }
     try {
       if (isEdit && id) {
         await updateItem<Trip>('/trips', id, payload);
@@ -311,17 +317,25 @@ export default function TripForm() {
   return (
     <Box>
       <PageHeader
-        title={isEdit ? 'Edit Trip' : 'New Trip Entry'}
+        title={isView ? 'View Trip' : isEdit ? 'Edit Trip' : 'New Trip Entry'}
         subtitle="Freight rate × weight = total freight; profit = total freight − expenses"
-        breadcrumbs={[{ label: 'Trips', to: '/trips' }, { label: isEdit ? 'Edit' : 'New' }]}
+        breadcrumbs={[{ label: 'Trips', to: '/trips' }, { label: isView ? 'View' : isEdit ? 'Edit' : 'New' }]}
         action={
-          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/trips')}>
-            Back
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {isView && id && (
+              <Button variant="contained" startIcon={<EditIcon />} onClick={() => navigate(`/trips/${id}/edit`)}>
+                Edit
+              </Button>
+            )}
+            <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/trips')}>
+              Back
+            </Button>
+          </Box>
         }
       />
 
       <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
+      <fieldset disabled={isView} style={{ border: 'none', margin: 0, padding: 0, minInlineSize: 0 }}>
       <Grid container spacing={2.5}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Card sx={{ mb: 2.5 }}>
@@ -340,7 +354,7 @@ export default function TripForm() {
                       input: { readOnly: true },
                       inputLabel: { shrink: true },
                     }}
-                    helperText={isEdit ? 'Trip number cannot be changed' : 'Auto-generated on save'}
+                    helperText={isEdit || isView ? 'Trip number cannot be changed' : 'Auto-generated on save'}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -416,6 +430,7 @@ export default function TripForm() {
                     control={control}
                     render={({ field }) => (
                       <Autocomplete
+                        disabled={isView}
                         freeSolo
                         autoSelect
                         options={fromCityOptions}
@@ -451,6 +466,7 @@ export default function TripForm() {
                     control={control}
                     render={({ field }) => (
                       <Autocomplete
+                        disabled={isView}
                         freeSolo
                         autoSelect
                         options={toCityOptions}
@@ -485,7 +501,7 @@ export default function TripForm() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <FormControlLabel
-                    control={<Switch checked={!!watched.compressor} onChange={(e) => setValue('compressor', e.target.checked)} />}
+                    control={<Switch disabled={isView} checked={!!watched.compressor} onChange={(e) => setValue('compressor', e.target.checked)} />}
                     label="Compressor"
                     sx={{ mt: 2 }}
                   />
@@ -517,10 +533,30 @@ export default function TripForm() {
                   <TextField label="Total KM" value={calculations.total_km} fullWidth slotProps={{ input: { readOnly: true } }} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('diesel_qty')} label="Diesel Qty (Liters)" type="number" fullWidth helperText={defaultDieselRate ? `Price: ₹${defaultDieselRate} per liter` : undefined} />
+                  <TextField
+                    {...register('diesel_qty')}
+                    label="Diesel Qty (Liters)"
+                    type="number"
+                    fullWidth
+                    disabled={dieselFromStock}
+                    helperText={
+                      dieselFromStock
+                        ? 'Synced from diesel stock issues for this trip'
+                        : defaultDieselRate
+                          ? `Price: ₹${defaultDieselRate} per liter. Link a Diesel issue to keep stock in sync.`
+                          : 'Link a Diesel issue to keep stock in sync'
+                    }
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('diesel_rate')} label="Diesel Rate" type="number" fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }} />
+                  <TextField
+                    {...register('diesel_rate')}
+                    label="Diesel Rate"
+                    type="number"
+                    fullWidth
+                    disabled={dieselFromStock}
+                    slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
@@ -598,21 +634,24 @@ export default function TripForm() {
                 {calculations.trip_days} day{calculations.trip_days !== 1 ? 's' : ''} ({watched.start_date}{watched.end_date ? ` → ${watched.end_date}` : ''})
               </Typography>
 
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                size="large"
-                startIcon={<SaveIcon />}
-                sx={{ mt: 3 }}
-                disabled={isSubmitting}
-              >
-                {isEdit ? 'Update Trip' : 'Save Trip'}
-              </Button>
+              {!isView && (
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  startIcon={<SaveIcon />}
+                  sx={{ mt: 3 }}
+                  disabled={isSubmitting}
+                >
+                  {isEdit ? 'Update Trip' : 'Save Trip'}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+      </fieldset>
       </Box>
     </Box>
   );

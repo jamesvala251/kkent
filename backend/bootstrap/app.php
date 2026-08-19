@@ -12,8 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Token-based API (Bearer). Do not enable statefulApi() — it requires CSRF
-        // and breaks SPA login on production when /sanctum/csrf-cookie is not used.
+        $middleware->alias([
+            'module' => \App\Http\Middleware\EnsureModulePermission::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

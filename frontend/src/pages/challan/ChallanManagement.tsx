@@ -370,6 +370,7 @@ export default function ChallanManagement() {
   const [nextNo, setNextNo] = useState('');
   const [lineItems, setLineItems] = useState<ChallanLineItem[]>([]);
   const [deleteChallanId, setDeleteChallanId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const menuChallanRef = useRef<Challan | null>(null);
   const [saving, setSaving] = useState(false);
@@ -389,6 +390,9 @@ export default function ChallanManagement() {
     po_no: '',
     prepared_by: '',
     select_item_id: '',
+    cgst_rate: '9',
+    sgst_rate: '9',
+    igst_rate: '0',
   });
 
   const cityOptions = useMemo(
@@ -469,8 +473,12 @@ export default function ChallanManagement() {
       po_no: '',
       prepared_by: '',
       select_item_id: '',
+      cgst_rate: '9',
+      sgst_rate: '9',
+      igst_rate: '0',
     });
     setLineItems([]);
+    setEditingId(null);
     if (challanNo) setNextNo(challanNo);
   };
 
@@ -489,13 +497,13 @@ export default function ChallanManagement() {
       lineItems.length > 0;
 
     if (!requiredOk) {
-      window.alert('Please fill all required fields and select an item');
+      toast.error('Please fill all required fields and add at least one item');
       return;
     }
 
     setSaving(true);
     try {
-      await api.post('/challan', {
+      const payload = {
         date: form.date,
         consignee: form.consignee,
         consignee_gst: form.consignee_gst,
@@ -510,8 +518,17 @@ export default function ChallanManagement() {
         e_way_date: form.e_way_date,
         prepared_by: form.prepared_by,
         item_table: lineItems,
-      });
-      toast.success('Challan added');
+        cgst_rate: Number(form.cgst_rate) || 0,
+        sgst_rate: Number(form.sgst_rate) || 0,
+        igst_rate: Number(form.igst_rate) || 0,
+      };
+      if (editingId) {
+        await api.put(`/challan/${editingId}`, payload);
+        toast.success('Challan updated');
+      } else {
+        await api.post('/challan', payload);
+        toast.success('Challan added');
+      }
       const next = await api.get<{ challan_no: string }>('/challan/next-number');
       resetForm(next.data?.challan_no);
       loadAll();
@@ -519,6 +536,32 @@ export default function ChallanManagement() {
       // interceptor
     }
     setSaving(false);
+  };
+
+  const startEdit = (row: Challan) => {
+    setEditingId(row.id);
+    setNextNo(row.challan_no);
+    setForm({
+      consignee: row.consignee || '',
+      consignee_gst: row.consignee_gst || '',
+      consignee_address: row.consignee_address || '',
+      date: row.date?.split('T')[0] || dayjs().format('YYYY-MM-DD'),
+      transporter: row.transporter || '',
+      vendor: row.vendor || '',
+      dispatched_from: row.dispatched_from || '',
+      vehicle_no: row.vehicle_no || '',
+      e_way_bill_no: row.e_way_bill_no || '',
+      e_way_date: row.e_way_date?.split('T')[0] || dayjs().format('YYYY-MM-DD'),
+      lr_no: row.lr_no || '',
+      po_no: row.po_no || '',
+      prepared_by: row.prepared_by || '',
+      select_item_id: '',
+      cgst_rate: '9',
+      sgst_rate: '9',
+      igst_rate: '0',
+    });
+    setLineItems(Array.isArray(row.item_table) ? row.item_table : []);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const closeRowMenu = () => {
@@ -594,7 +637,7 @@ export default function ChallanManagement() {
         <Box>
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>Add Delivery Challan</Typography>
+              <Typography variant="h6" sx={{ mb: 2 }}>{editingId ? 'Edit Delivery Challan' : 'Add Delivery Challan'}</Typography>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
@@ -743,6 +786,54 @@ export default function ChallanManagement() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
+                    label="CGST %"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={form.cgst_rate}
+                    disabled={Number(form.igst_rate) > 0}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setForm({ ...form, cgst_rate: value, igst_rate: Number(value) > 0 ? '0' : form.igst_rate });
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    label="SGST %"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={form.sgst_rate}
+                    disabled={Number(form.igst_rate) > 0}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setForm({ ...form, sgst_rate: value, igst_rate: Number(value) > 0 ? '0' : form.igst_rate });
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    label="IGST %"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={form.igst_rate}
+                    disabled={Number(form.cgst_rate) > 0 || Number(form.sgst_rate) > 0}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setForm({
+                        ...form,
+                        igst_rate: value,
+                        cgst_rate: Number(value) > 0 ? '0' : form.cgst_rate,
+                        sgst_rate: Number(value) > 0 ? '0' : form.sgst_rate,
+                      });
+                    }}
+                    helperText="Use IGST instead of CGST + SGST for inter-state"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
                     select
                     label="Select Item"
                     fullWidth
@@ -795,10 +886,13 @@ export default function ChallanManagement() {
                 </Box>
               )}
 
-              <Box sx={{ mt: 3 }}>
+              <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
                 <Button variant="contained" onClick={handleSubmit} disabled={saving}>
-                  Add Challan
+                  {editingId ? 'Update Challan' : 'Add Challan'}
                 </Button>
+                {editingId && (
+                  <Button onClick={() => resetForm(nextNo)}>Cancel</Button>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -837,6 +931,9 @@ export default function ChallanManagement() {
                         <TableCell>{row.vehicle_no}</TableCell>
                         <TableCell>{row.e_way_bill_no}</TableCell>
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                          <IconButton size="small" onClick={() => startEdit(row)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                           <IconButton size="small" color="error" onClick={() => setDeleteChallanId(row.id)}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>

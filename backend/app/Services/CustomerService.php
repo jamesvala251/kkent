@@ -3,9 +3,10 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Trip;
 use App\Repositories\CustomerRepository;
 use App\Services\AuditService;
-use Illuminate\Support\Facades\DB;
 
 class CustomerService
 {
@@ -17,6 +18,21 @@ class CustomerService
     public function list(array $filters = [])
     {
         return $this->repository->all($filters);
+    }
+
+    public function summary(): array
+    {
+        $billed = (float) Invoice::sum('total_amount');
+        $paid = (float) Invoice::sum('paid_amount');
+
+        return [
+            'total_customers' => Customer::count(),
+            'active_customers' => Customer::where('status', 'active')->count(),
+            'total_trips' => Trip::count(),
+            'billed' => round($billed, 2),
+            'paid' => round($paid, 2),
+            'outstanding' => round($billed - $paid, 2),
+        ];
     }
 
     public function find(int $id): Customer
@@ -51,13 +67,18 @@ class CustomerService
     {
         $customer = $this->find($customerId);
 
+        $invoices = $customer->invoices()->latest()->limit(200)->get();
+        $billed = (float) $customer->invoices()->sum('total_amount');
+        $paid = (float) $customer->invoices()->sum('paid_amount');
+
         return [
             'customer' => $customer,
-            'trips' => $customer->trips()->with(['truck', 'driver'])->latest()->paginate(20),
-            'invoices' => $customer->invoices()->latest()->paginate(20),
-            'outstanding' => $customer->invoices()
-                ->whereIn('payment_status', ['pending', 'partial', 'overdue'])
-                ->sum(DB::raw('total_amount - paid_amount')),
+            'trips' => $customer->trips()->with(['truck', 'driver'])->latest()->limit(200)->get(),
+            'invoices' => $invoices,
+            'rentals' => $customer->hitachiRentals()->with('hitachi')->latest()->limit(200)->get(),
+            'billed' => round($billed, 2),
+            'paid' => round($paid, 2),
+            'outstanding' => round($billed - $paid, 2),
         ];
     }
 }

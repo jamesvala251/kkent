@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\HitachiController;
 use App\Http\Controllers\Api\InvoiceController;
-use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ReportController;
@@ -22,6 +21,7 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\TruckController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -30,7 +30,7 @@ Route::prefix('auth')->group(function () {
     Route::post('reset-password', [AuthController::class, 'resetPassword']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'module'])->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
@@ -92,10 +92,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [ChallanController::class, 'index']);
         Route::post('/', [ChallanController::class, 'store']);
         Route::get('{challan}', [ChallanController::class, 'show']);
+        Route::put('{challan}', [ChallanController::class, 'update']);
         Route::delete('{challan}', [ChallanController::class, 'destroy']);
     });
-
-    Route::apiResource('maintenance', MaintenanceController::class);
 
     Route::post('documents', [DocumentController::class, 'store']);
     Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
@@ -121,7 +120,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('salary', [ReportController::class, 'salary']);
         Route::get('outstanding', [ReportController::class, 'outstanding']);
         Route::get('invoices', [ReportController::class, 'invoices']);
-        Route::get('maintenance', [ReportController::class, 'maintenance']);
     });
 
     Route::get('settings', [SettingController::class, 'show']);
@@ -129,5 +127,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('expense-categories', [ExpenseController::class, 'categories']);
 
     Route::get('permissions', [PermissionController::class, 'index']);
+    Route::apiResource('users', UserController::class);
     Route::apiResource('roles', RoleController::class);
 });
