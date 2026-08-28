@@ -81,6 +81,7 @@ class _HitachiScreenState extends State<HitachiScreen>
       ),
       floatingActionButton: auth.can('hitachi.create')
           ? FloatingActionButton(
+              heroTag: 'fab-hitachi',
               onPressed: () async {
                 final machine = _tabs.index == 0;
                 final ok = await Navigator.of(context).push<bool>(

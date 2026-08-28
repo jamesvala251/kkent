@@ -273,6 +273,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             right: 16,
             bottom: 16,
             child: FloatingActionButton.extended(
+              heroTag: 'fab-expenses',
               onPressed: () async {
                 final saved = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => const ExpenseFormScreen()),

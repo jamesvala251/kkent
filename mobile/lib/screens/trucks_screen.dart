@@ -67,6 +67,7 @@ class _TrucksScreenState extends State<TrucksScreen> {
       appBar: AppBar(title: Text(l.trucks)),
       floatingActionButton: canCreate
           ? FloatingActionButton(
+              heroTag: 'fab-trucks',
               onPressed: () async {
                 final ok = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => const TruckFormScreen()),

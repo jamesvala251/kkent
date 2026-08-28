@@ -67,6 +67,7 @@ class _DriversScreenState extends State<DriversScreen> {
       appBar: AppBar(title: Text(l.drivers)),
       floatingActionButton: canCreate
           ? FloatingActionButton(
+              heroTag: 'fab-drivers',
               onPressed: () async {
                 final ok = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => const DriverFormScreen()),

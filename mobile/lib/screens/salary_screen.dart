@@ -95,6 +95,7 @@ class _SalaryScreenState extends State<SalaryScreen>
       ),
       floatingActionButton: canCreate
           ? FloatingActionButton(
+              heroTag: 'fab-salary',
               onPressed: () async {
                 final advance = _tabs.index != 1;
                 final ok = await Navigator.of(context).push<bool>(

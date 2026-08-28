@@ -160,6 +160,7 @@ class _TripsScreenState extends State<TripsScreen> {
             right: 16,
             bottom: 16,
             child: FloatingActionButton.extended(
+              heroTag: 'fab-trips',
               onPressed: () async {
                 final saved = await Navigator.of(context).push<TripItem>(
                   MaterialPageRoute(builder: (_) => const TripFormScreen()),

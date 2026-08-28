@@ -62,6 +62,7 @@ class _DieselScreenState extends State<DieselScreen> {
       appBar: AppBar(title: Text(l.diesel)),
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
+              heroTag: 'fab-diesel',
               onPressed: () async {
                 final added = await showModalBottomSheet<bool>(
                   context: context,
