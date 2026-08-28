@@ -30,12 +30,12 @@ REMOTE_PUBLIC="${HOSTINGER_PUBLIC_HTML:-${REMOTE_USER_HOME}/domains/kk-enterpris
 REMOTE_APP="${REMOTE_PUBLIC}/backend"
 SSH_IDENTITY="${HOSTINGER_SSH_KEY_FILE:-}"
 
-SSH_OPTS=(-p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new)
-RSYNC_SSH="ssh -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new"
+SSH_OPTS=(-p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
+RSYNC_SSH="ssh -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
 
 if [[ -n "${SSH_IDENTITY}" ]]; then
   SSH_OPTS+=(-i "${SSH_IDENTITY}")
-  RSYNC_SSH="ssh -p ${SSH_PORT} -i ${SSH_IDENTITY} -o StrictHostKeyChecking=accept-new"
+  RSYNC_SSH="ssh -p ${SSH_PORT} -i ${SSH_IDENTITY} -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
 fi
 
 upload_backend() {

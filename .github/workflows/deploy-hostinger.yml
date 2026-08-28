@@ -10,6 +10,8 @@ on:
       - 'deploy/**'
       - '.github/workflows/deploy-hostinger.yml'
 
+  workflow_dispatch:
+
 concurrency:
   group: hostinger-production
   cancel-in-progress: true
@@ -38,19 +40,21 @@ jobs:
           chmod +x deploy/build-production.sh
           ./deploy/build-production.sh
 
-      - name: Configure SSH
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.HOSTINGER_SSH_KEY }}
+
+      - name: Add Hostinger host key
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/hostinger_deploy
-          chmod 600 ~/.ssh/hostinger_deploy
-          ssh-keyscan -p "${{ secrets.HOSTINGER_SSH_PORT || '65002' }}" "${{ secrets.HOSTINGER_SSH_HOST || '187.124.102.138' }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${{ secrets.HOSTINGER_SSH_PORT || '65002' }}" -H "${{ secrets.HOSTINGER_SSH_HOST || '187.124.102.138' }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Deploy to Hostinger
         env:
           HOSTINGER_SSH: ${{ secrets.HOSTINGER_SSH_USER || 'u255158670' }}@${{ secrets.HOSTINGER_SSH_HOST || '187.124.102.138' }}
           HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '65002' }}
           HOSTINGER_HOME: ${{ secrets.HOSTINGER_HOME || '/home/u255158670' }}
-          HOSTINGER_SSH_KEY_FILE: ~/.ssh/hostinger_deploy
         run: |
           chmod +x deploy/upload-hostinger.sh
           ./deploy/upload-hostinger.sh all
