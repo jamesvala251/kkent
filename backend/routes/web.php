@@ -6,8 +6,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/{any?}', function (?string $any = null) {
     $candidates = [
         public_path('app.html'),
+        public_path('index.html'),
         // Hostinger layout: Laravel in public_html/backend, SPA in public_html/
         base_path('../app.html'),
+        base_path('../index.html'),
     ];
 
     foreach ($candidates as $spa) {

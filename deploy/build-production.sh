@@ -18,6 +18,7 @@ echo "==> Copying build into backend/public"
 rm -rf "${ROOT}/backend/public/assets" "${ROOT}/backend/public/app.html"
 cp -r dist/assets "${ROOT}/backend/public/assets"
 cp dist/index.html "${ROOT}/backend/public/app.html"
+cp dist/index.html "${ROOT}/backend/public/index.html"
 
 if [ -f dist/favicon.ico ]; then
   cp dist/favicon.ico "${ROOT}/backend/public/favicon.ico"

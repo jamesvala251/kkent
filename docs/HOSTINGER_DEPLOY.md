@@ -149,6 +149,51 @@ Change the admin password immediately after first login.
 
 ---
 
+## Automatic deploy on push to `main`
+
+GitHub Actions deploys when `backend/`, `frontend/`, or `deploy/` changes on `main` (mobile-only commits are skipped).
+
+### One-time setup
+
+1. **Create a deploy SSH key** on your Mac:
+
+```bash
+ssh-keygen -t ed25519 -C "github-kkent-deploy" -f ~/.ssh/kkent_hostinger_deploy -N ""
+cat ~/.ssh/kkent_hostinger_deploy.pub
+```
+
+2. **Hostinger** → SSH Access → **Add SSH key** → paste the `.pub` content.
+
+3. **GitHub** → repo **Settings → Secrets and variables → Actions** → add:
+
+| Secret | Value |
+|--------|--------|
+| `HOSTINGER_SSH_KEY` | Full contents of `~/.ssh/kkent_hostinger_deploy` (private key) |
+
+Optional overrides (defaults match your server):
+
+| Secret | Default |
+|--------|---------|
+| `HOSTINGER_SSH_HOST` | `187.124.102.138` |
+| `HOSTINGER_SSH_PORT` | `65002` |
+| `HOSTINGER_SSH_USER` | `u255158670` |
+| `HOSTINGER_HOME` | `/home/u255158670` |
+| `HOSTINGER_PUBLIC_HTML` | `/home/u255158670/domains/kk-enterpriseindia.com/public_html` |
+
+4. Push to `main`. Check **Actions** tab for deploy status.
+
+The workflow builds React, rsyncs only changed files, keeps server `.env` and uploads, then runs `migrate`, `config:cache`, and `route:cache`.
+
+### Manual deploy (same as CI)
+
+```bash
+./deploy/build-production.sh
+export HOSTINGER_SSH_KEY_FILE="$HOME/.ssh/kkent_hostinger_deploy"
+./deploy/upload-hostinger.sh all
+```
+
+---
+
 ## Updating the site later
 
 On your computer:
