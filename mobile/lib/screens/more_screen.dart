@@ -8,8 +8,10 @@ import '../widgets/language_picker.dart';
 import 'customers_screen.dart';
 import 'diesel_screen.dart';
 import 'drivers_screen.dart';
+import 'hitachi_screen.dart';
 import 'outstanding_screen.dart';
 import 'profile_screen.dart';
+import 'salary_screen.dart';
 import 'trucks_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -47,6 +49,20 @@ class MoreScreen extends StatelessWidget {
           l.moreDieselSubtitle,
           Icons.local_gas_station_outlined,
           () => const DieselScreen(),
+        ),
+      if (auth.can('hitachi.view'))
+        _MoreTile(
+          l.hitachi,
+          l.moreHitachiSubtitle,
+          Icons.precision_manufacturing_outlined,
+          () => const HitachiScreen(),
+        ),
+      if (auth.can('salaries.view'))
+        _MoreTile(
+          l.salary,
+          l.moreSalarySubtitle,
+          Icons.payments_outlined,
+          () => const SalaryScreen(),
         ),
       if (auth.can('reports.view') || auth.can('invoices.view'))
         _MoreTile(

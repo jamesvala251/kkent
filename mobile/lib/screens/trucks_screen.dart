@@ -6,7 +6,10 @@ import '../models/models.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/documents_panel.dart';
+import '../widgets/forms.dart';
 import '../widgets/ui.dart';
+import 'truck_form_screen.dart';
 
 class TrucksScreen extends StatefulWidget {
   const TrucksScreen({super.key});
@@ -59,8 +62,20 @@ class _TrucksScreenState extends State<TrucksScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final canCreate = context.watch<AuthState>().can('trucks.create');
     return Scaffold(
       appBar: AppBar(title: Text(l.trucks)),
+      floatingActionButton: canCreate
+          ? FloatingActionButton(
+              onPressed: () async {
+                final ok = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => const TruckFormScreen()),
+                );
+                if (ok == true) _load();
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: Column(
         children: [
           SearchField(
@@ -85,16 +100,19 @@ class _TrucksScreenState extends State<TrucksScreen> {
                 return RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 4, bottom: 24),
+                    padding: const EdgeInsets.only(top: 4, bottom: 88),
                     itemCount: rows.length,
                     itemBuilder: (context, index) {
                       final row = rows[index];
                       return ListCard(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => TruckDetailScreen(id: row.id),
-                          ),
-                        ),
+                        onTap: () async {
+                          final ok = await Navigator.of(context).push<bool>(
+                            MaterialPageRoute(
+                              builder: (_) => TruckDetailScreen(id: row.id),
+                            ),
+                          );
+                          if (ok == true) _load();
+                        },
                         child: Padding(
                           padding: const EdgeInsets.all(14),
                           child: Row(
@@ -114,6 +132,7 @@ class _TrucksScreenState extends State<TrucksScreen> {
                                       [
                                         row.brand,
                                         row.model,
+                                        if (row.hasExpiringDoc) l.docsExpiring,
                                       ].whereType<String>().join(' · '),
                                       style: const TextStyle(
                                         color: AppColors.muted,
@@ -180,8 +199,39 @@ class _TruckDetailScreenState extends State<TruckDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final auth = context.watch<AuthState>();
     return Scaffold(
-      appBar: AppBar(title: Text(_truck?.truckNumber ?? l.truck)),
+      appBar: AppBar(
+        title: Text(_truck?.truckNumber ?? l.truck),
+        actions: [
+          if (auth.can('trucks.edit') && _truck != null)
+            IconButton(
+              onPressed: () async {
+                final ok = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => TruckFormScreen(truck: _truck),
+                  ),
+                );
+                if (ok == true) _load();
+              },
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          if (auth.can('trucks.delete') && _truck != null)
+            IconButton(
+              onPressed: () async {
+                if (!await confirmDelete(context)) return;
+                try {
+                  await context.read<AuthState>().api.deleteTruck(widget.id);
+                  if (!mounted) return;
+                  Navigator.pop(context, true);
+                } catch (e) {
+                  if (mounted) showError(context, e);
+                }
+              },
+              icon: const Icon(Icons.delete_outline),
+            ),
+        ],
+      ),
       body: AsyncBody<TruckItem>(
         loading: _loading,
         error: _error,
@@ -194,6 +244,7 @@ class _TruckDetailScreenState extends State<TruckDetailScreen> {
               title: l.vehicle,
               children: [
                 Kv(l.number, truck.truckNumber),
+                Kv(l.rcNumber, truck.rcNumber),
                 Kv(l.brand, truck.brand),
                 Kv(l.model, truck.model),
                 Kv(l.capacity, truck.capacity),
@@ -208,7 +259,7 @@ class _TruckDetailScreenState extends State<TruckDetailScreen> {
                         width: 110,
                         child: Text(
                           l.status,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.muted,
                             fontSize: 13,
                           ),
@@ -222,12 +273,20 @@ class _TruckDetailScreenState extends State<TruckDetailScreen> {
             ),
             const SizedBox(height: 12),
             SectionCard(
-              title: l.documents,
+              title: l.expiryDates,
               children: [
                 Kv(l.insurance, formatDate(truck.insuranceExpiry)),
                 Kv(l.fitness, formatDate(truck.fitnessExpiry)),
                 Kv(l.permit, formatDate(truck.permitExpiry)),
+                Kv(l.pucExpiry, formatDate(truck.pucExpiry)),
+                Kv(l.taxExpiry, formatDate(truck.taxExpiry)),
               ],
+            ),
+            const SizedBox(height: 12),
+            DocumentsPanel(
+              type: 'truck',
+              entityId: truck.id,
+              canEdit: auth.can('trucks.edit'),
             ),
           ],
         ),

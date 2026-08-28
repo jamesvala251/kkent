@@ -6,7 +6,9 @@ import '../models/models.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/trip_share.dart';
 import '../widgets/ui.dart';
+import 'trip_form_screen.dart';
 
 class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
@@ -59,44 +61,47 @@ class _TripsScreenState extends State<TripsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Column(
+    final canCreate = context.watch<AuthState>().can('trips.create');
+    return Stack(
       children: [
-        SearchField(
-          controller: _search,
-          hint: l.searchTripsHint,
-          onSubmit: _load,
-        ),
-        Expanded(
-          child: AsyncBody<List<TripItem>>(
-            loading: _loading,
-            error: _error,
-            data: _rows,
-            onRetry: _load,
-            emptyMessage: l.noTripsFound,
-            builder: (rows) {
-              if (rows.isEmpty) {
-                return EmptyState(
-                  icon: Icons.route,
-                  title: l.noTripsFound,
-                  message: l.tryAnotherSearch,
-                );
-              }
-              return RefreshIndicator(
-                onRefresh: _load,
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 4, bottom: 24),
-                  itemCount: rows.length,
-                  itemBuilder: (context, index) {
-                    final trip = rows[index];
-                    return ListCard(
-                      onTap: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => TripDetailScreen(id: trip.id),
-                          ),
-                        );
-                        _load();
-                      },
+        Column(
+          children: [
+            SearchField(
+              controller: _search,
+              hint: l.searchTripsHint,
+              onSubmit: _load,
+            ),
+            Expanded(
+              child: AsyncBody<List<TripItem>>(
+                loading: _loading,
+                error: _error,
+                data: _rows,
+                onRetry: _load,
+                emptyMessage: l.noTripsFound,
+                builder: (rows) {
+                  if (rows.isEmpty) {
+                    return EmptyState(
+                      icon: Icons.route,
+                      title: l.noTripsFound,
+                      message: l.tryAnotherSearch,
+                    );
+                  }
+                  return RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(top: 4, bottom: 88),
+                      itemCount: rows.length,
+                      itemBuilder: (context, index) {
+                        final trip = rows[index];
+                        return ListCard(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TripDetailScreen(id: trip.id),
+                              ),
+                            );
+                            _load();
+                          },
                       child: Padding(
                         padding: const EdgeInsets.all(14),
                         child: Column(
@@ -148,9 +153,107 @@ class _TripsScreenState extends State<TripsScreen> {
             },
           ),
         ),
+          ],
+        ),
+        if (canCreate)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () async {
+                final saved = await Navigator.of(context).push<TripItem>(
+                  MaterialPageRoute(builder: (_) => const TripFormScreen()),
+                );
+                if (saved == null || !mounted) return;
+                _load();
+                final share = await showDialog<bool>(
+                  context: context,
+                  builder: (context) {
+                    final loc = AppLocalizations.of(context);
+                    return AlertDialog(
+                      title: Text(loc.shareTrip),
+                      content: Text(loc.shareTripAfterSave),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(loc.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(loc.shareTrip),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (share == true && mounted) {
+                  await showTripShareSheet(context, saved);
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: Text(l.add),
+            ),
+          ),
       ],
     );
   }
+}
+
+Future<void> showTripShareSheet(BuildContext context, TripItem trip) async {
+  final l = AppLocalizations.of(context);
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(l.shareTrip),
+              subtitle: Text(
+                trip.customerMobile?.trim().isNotEmpty == true
+                    ? trip.customerMobile!
+                    : l.shareNoCustomerMobile,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_outlined),
+              title: Text(l.shareWhatsApp),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                final ok = await openWhatsApp(
+                  text: tripShareMessage(l, trip),
+                  phone: trip.customerMobile,
+                );
+                if (!ok && context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(l.cannotOpenWhatsApp)));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sms_outlined),
+              title: Text(l.shareSms),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                final ok = await openSms(
+                  text: tripShareMessage(l, trip),
+                  phone: trip.customerMobile,
+                );
+                if (!ok && context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(l.cannotOpenSms)));
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 class TripDetailScreen extends StatefulWidget {
@@ -228,14 +331,41 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     }
   }
 
+  Future<void> _share() async {
+    final trip = _trip;
+    if (trip == null) return;
+    await showTripShareSheet(context, trip);
+  }
+
+  Future<void> _edit() async {
+    final trip = _trip;
+    if (trip == null) return;
+    final saved = await Navigator.of(context).push<TripItem>(
+      MaterialPageRoute(builder: (_) => TripFormScreen(trip: trip)),
+    );
+    if (saved != null) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final canDelete = context.watch<AuthState>().can('trips.delete');
+    final canEdit = context.watch<AuthState>().can('trips.edit');
     final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(_trip?.tripNumber ?? l.trip),
         actions: [
+          IconButton(
+            onPressed: _trip == null ? null : _share,
+            icon: const Icon(Icons.share_outlined),
+            tooltip: l.shareTrip,
+          ),
+          if (canEdit)
+            IconButton(
+              onPressed: _trip == null ? null : _edit,
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: l.editTrip,
+            ),
           if (canDelete)
             IconButton(
               onPressed: _trip == null ? null : _delete,

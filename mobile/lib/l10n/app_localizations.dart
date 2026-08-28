@@ -659,19 +659,19 @@ abstract class AppLocalizations {
   /// No description provided for @moreTrucksSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Fleet and document expiry'**
+  /// **'Fleet, expiry dates, and documents'**
   String get moreTrucksSubtitle;
 
   /// No description provided for @moreDriversSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Contacts and assigned trucks'**
+  /// **'CRUD, documents, assigned truck'**
   String get moreDriversSubtitle;
 
   /// No description provided for @moreDieselSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Stock, purchases, and issues'**
+  /// **'Stock in/out, ledger, Hitachi issue'**
   String get moreDieselSubtitle;
 
   /// No description provided for @moreOutstandingSubtitle.
@@ -1183,6 +1183,684 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User'**
   String get user;
+
+  /// No description provided for @deleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This record will be removed.'**
+  String get deleteConfirm;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @noDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'No documents uploaded'**
+  String get noDocuments;
+
+  /// No description provided for @fileRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Title and file are required'**
+  String get fileRequired;
+
+  /// No description provided for @title.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get title;
+
+  /// No description provided for @documentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Document type'**
+  String get documentType;
+
+  /// No description provided for @other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get other;
+
+  /// No description provided for @chooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get chooseFile;
+
+  /// No description provided for @uploadDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload document'**
+  String get uploadDocument;
+
+  /// No description provided for @expiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry'**
+  String get expiry;
+
+  /// No description provided for @addDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Add driver'**
+  String get addDriver;
+
+  /// No description provided for @editDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit driver'**
+  String get editDriver;
+
+  /// No description provided for @requiredField.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill the required fields'**
+  String get requiredField;
+
+  /// No description provided for @assignedTruck.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned truck'**
+  String get assignedTruck;
+
+  /// No description provided for @none.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// No description provided for @salaryType.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary type'**
+  String get salaryType;
+
+  /// No description provided for @salaryMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get salaryMonthly;
+
+  /// No description provided for @salaryPerTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Per trip'**
+  String get salaryPerTrip;
+
+  /// No description provided for @salaryBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get salaryBoth;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @emergencyContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency contact'**
+  String get emergencyContact;
+
+  /// No description provided for @truckNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Truck number'**
+  String get truckNumber;
+
+  /// No description provided for @rcNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'RC number'**
+  String get rcNumber;
+
+  /// No description provided for @pucExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'PUC expiry'**
+  String get pucExpiry;
+
+  /// No description provided for @taxExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax expiry'**
+  String get taxExpiry;
+
+  /// No description provided for @docsExpiring.
+  ///
+  /// In en, this message translates to:
+  /// **'Docs expiring'**
+  String get docsExpiring;
+
+  /// No description provided for @expiryDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry dates'**
+  String get expiryDates;
+
+  /// No description provided for @addTruck.
+  ///
+  /// In en, this message translates to:
+  /// **'Add truck'**
+  String get addTruck;
+
+  /// No description provided for @editTruck.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit truck'**
+  String get editTruck;
+
+  /// No description provided for @hitachi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hitachi'**
+  String get hitachi;
+
+  /// No description provided for @machines.
+  ///
+  /// In en, this message translates to:
+  /// **'Machines'**
+  String get machines;
+
+  /// No description provided for @rentals.
+  ///
+  /// In en, this message translates to:
+  /// **'Rentals'**
+  String get rentals;
+
+  /// No description provided for @noMachines.
+  ///
+  /// In en, this message translates to:
+  /// **'No machines'**
+  String get noMachines;
+
+  /// No description provided for @noRentals.
+  ///
+  /// In en, this message translates to:
+  /// **'No rentals'**
+  String get noRentals;
+
+  /// No description provided for @addMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add machine'**
+  String get addMachine;
+
+  /// No description provided for @editMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit machine'**
+  String get editMachine;
+
+  /// No description provided for @machineNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine number'**
+  String get machineNumber;
+
+  /// No description provided for @registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration'**
+  String get registration;
+
+  /// No description provided for @hourlyRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly rate'**
+  String get hourlyRate;
+
+  /// No description provided for @dailyRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily rate'**
+  String get dailyRate;
+
+  /// No description provided for @monthlyRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly rate'**
+  String get monthlyRate;
+
+  /// No description provided for @addRental.
+  ///
+  /// In en, this message translates to:
+  /// **'Add rental'**
+  String get addRental;
+
+  /// No description provided for @editRental.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit rental'**
+  String get editRental;
+
+  /// No description provided for @billingType.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get billingType;
+
+  /// No description provided for @hourly.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly'**
+  String get hourly;
+
+  /// No description provided for @daily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get daily;
+
+  /// No description provided for @billingMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get billingMonthly;
+
+  /// No description provided for @hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get hours;
+
+  /// No description provided for @days.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get days;
+
+  /// No description provided for @months.
+  ///
+  /// In en, this message translates to:
+  /// **'Months'**
+  String get months;
+
+  /// No description provided for @startDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get startDate;
+
+  /// No description provided for @endDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get endDate;
+
+  /// No description provided for @site.
+  ///
+  /// In en, this message translates to:
+  /// **'Site'**
+  String get site;
+
+  /// No description provided for @operator.
+  ///
+  /// In en, this message translates to:
+  /// **'Operator'**
+  String get operator;
+
+  /// No description provided for @advance.
+  ///
+  /// In en, this message translates to:
+  /// **'Advance'**
+  String get advance;
+
+  /// No description provided for @statusBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked'**
+  String get statusBooked;
+
+  /// No description provided for @statusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get statusRunning;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @salary.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary'**
+  String get salary;
+
+  /// No description provided for @advances.
+  ///
+  /// In en, this message translates to:
+  /// **'Advances'**
+  String get advances;
+
+  /// No description provided for @monthlyPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly pay'**
+  String get monthlyPay;
+
+  /// No description provided for @noAdvances.
+  ///
+  /// In en, this message translates to:
+  /// **'No advances'**
+  String get noAdvances;
+
+  /// No description provided for @addAdvanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a driver advance from here.'**
+  String get addAdvanceHint;
+
+  /// No description provided for @noSalaries.
+  ///
+  /// In en, this message translates to:
+  /// **'No salary entries'**
+  String get noSalaries;
+
+  /// No description provided for @addSalaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a monthly salary record.'**
+  String get addSalaryHint;
+
+  /// No description provided for @addAdvance.
+  ///
+  /// In en, this message translates to:
+  /// **'Add advance'**
+  String get addAdvance;
+
+  /// No description provided for @addSalary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add salary'**
+  String get addSalary;
+
+  /// No description provided for @reconcileMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month vs advances'**
+  String get reconcileMonth;
+
+  /// No description provided for @advanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get advanced;
+
+  /// No description provided for @remaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get remaining;
+
+  /// No description provided for @baseAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Base amount'**
+  String get baseAmount;
+
+  /// No description provided for @advanceDeduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Advance deduction'**
+  String get advanceDeduction;
+
+  /// No description provided for @year.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get year;
+
+  /// No description provided for @month.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get month;
+
+  /// No description provided for @ledger.
+  ///
+  /// In en, this message translates to:
+  /// **'Ledger'**
+  String get ledger;
+
+  /// No description provided for @stockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock in'**
+  String get stockIn;
+
+  /// No description provided for @stockOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock out'**
+  String get stockOut;
+
+  /// No description provided for @issueToHitachi.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue to Hitachi'**
+  String get issueToHitachi;
+
+  /// No description provided for @vehicleQtyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle and quantity are required'**
+  String get vehicleQtyRequired;
+
+  /// No description provided for @moreHitachiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Machines and rentals'**
+  String get moreHitachiSubtitle;
+
+  /// No description provided for @moreSalarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advances and monthly pay'**
+  String get moreSalarySubtitle;
+
+  /// No description provided for @moreDriversSubtitleFull.
+  ///
+  /// In en, this message translates to:
+  /// **'CRUD, documents, assigned truck'**
+  String get moreDriversSubtitleFull;
+
+  /// No description provided for @moreTrucksSubtitleFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Fleet, expiry dates, documents'**
+  String get moreTrucksSubtitleFull;
+
+  /// No description provided for @shareTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share trip'**
+  String get shareTrip;
+
+  /// No description provided for @shareWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get shareWhatsApp;
+
+  /// No description provided for @shareSms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get shareSms;
+
+  /// No description provided for @tripShareHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip confirmed'**
+  String get tripShareHeading;
+
+  /// No description provided for @tripShareThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you.'**
+  String get tripShareThanks;
+
+  /// No description provided for @cannotOpenWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open WhatsApp'**
+  String get cannotOpenWhatsApp;
+
+  /// No description provided for @cannotOpenSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Messages'**
+  String get cannotOpenSms;
+
+  /// No description provided for @shareNoCustomerMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer mobile is missing. You can still pick the chat or number.'**
+  String get shareNoCustomerMobile;
+
+  /// No description provided for @addTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add trip'**
+  String get addTrip;
+
+  /// No description provided for @editTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit trip'**
+  String get editTrip;
+
+  /// No description provided for @startKm.
+  ///
+  /// In en, this message translates to:
+  /// **'Start KM'**
+  String get startKm;
+
+  /// No description provided for @endKm.
+  ///
+  /// In en, this message translates to:
+  /// **'End KM'**
+  String get endKm;
+
+  /// No description provided for @dieselQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Diesel (litres)'**
+  String get dieselQty;
+
+  /// No description provided for @dieselRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Diesel rate'**
+  String get dieselRate;
+
+  /// No description provided for @toll.
+  ///
+  /// In en, this message translates to:
+  /// **'Toll'**
+  String get toll;
+
+  /// No description provided for @maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get maintenance;
+
+  /// No description provided for @otherExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Other expense'**
+  String get otherExpense;
+
+  /// No description provided for @driverSalary.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver salary'**
+  String get driverSalary;
+
+  /// No description provided for @freightRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Freight rate (per unit)'**
+  String get freightRate;
+
+  /// No description provided for @advanceReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Advance received'**
+  String get advanceReceived;
+
+  /// No description provided for @compressor.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressor'**
+  String get compressor;
+
+  /// No description provided for @shareTripAfterSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip saved. Share details with the customer now?'**
+  String get shareTripAfterSave;
+
+  /// No description provided for @expenseTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'All expenses'**
+  String get expenseTotal;
+
+  /// No description provided for @expenseTruckTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Truck & trips'**
+  String get expenseTruckTrips;
+
+  /// No description provided for @expenseHitachi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hitachi'**
+  String get expenseHitachi;
+
+  /// No description provided for @expenseOtherGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'Other / general'**
+  String get expenseOtherGeneral;
+
+  /// No description provided for @expenseEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries'**
+  String expenseEntries(int count);
+
+  /// No description provided for @topCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Top categories'**
+  String get topCategories;
+
+  /// No description provided for @recentExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent expenses'**
+  String get recentExpenses;
 }
 
 class _AppLocalizationsDelegate

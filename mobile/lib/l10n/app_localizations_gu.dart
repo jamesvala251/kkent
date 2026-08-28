@@ -291,13 +291,13 @@ class AppLocalizationsGu extends AppLocalizations {
   String get moreCustomersSubtitle => 'લેજર અને બાકી રકમ';
 
   @override
-  String get moreTrucksSubtitle => 'ફ્લીટ અને દસ્તાવેજની મુદત';
+  String get moreTrucksSubtitle => 'ફ્લીટ, મુદત અને દસ્તાવેજ';
 
   @override
-  String get moreDriversSubtitle => 'સંપર્ક અને સોંપેલી ટ્રક';
+  String get moreDriversSubtitle => 'CRUD, દસ્તાવેજ, સોંપેલી ટ્રક';
 
   @override
-  String get moreDieselSubtitle => 'સ્ટોક, ખરીદી અને ઇશ્યૂ';
+  String get moreDieselSubtitle => 'સ્ટોક ઇન/આઉટ, લેજર, હિટાચી';
 
   @override
   String get moreOutstandingSubtitle => 'બાકી અને આંશિક બિલ';
@@ -559,4 +559,346 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get user => 'યુઝર';
+
+  @override
+  String get deleteConfirm => 'આ રેકોર્ડ કાઢી નાખવામાં આવશે.';
+
+  @override
+  String get saved => 'સેવ થયું';
+
+  @override
+  String get noDocuments => 'કોઈ દસ્તાવેજ નથી';
+
+  @override
+  String get fileRequired => 'શીર્ષક અને ફાઇલ જરૂરી છે';
+
+  @override
+  String get title => 'શીર્ષક';
+
+  @override
+  String get documentType => 'દસ્તાવેજનો પ્રકાર';
+
+  @override
+  String get other => 'અન્ય';
+
+  @override
+  String get chooseFile => 'ફાઇલ પસંદ કરો';
+
+  @override
+  String get uploadDocument => 'દસ્તાવેજ અપલોડ કરો';
+
+  @override
+  String get expiry => 'મુદત';
+
+  @override
+  String get addDriver => 'ડ્રાઇવર ઉમેરો';
+
+  @override
+  String get editDriver => 'ડ્રાઇવર સંપાદિત કરો';
+
+  @override
+  String get requiredField => 'જરૂરી ફીલ્ડ ભરો';
+
+  @override
+  String get assignedTruck => 'સોંપેલી ટ્રક';
+
+  @override
+  String get none => 'કોઈ નહીં';
+
+  @override
+  String get salaryType => 'પગારનો પ્રકાર';
+
+  @override
+  String get salaryMonthly => 'માસિક';
+
+  @override
+  String get salaryPerTrip => 'પ્રતિ ટ્રિપ';
+
+  @override
+  String get salaryBoth => 'બંને';
+
+  @override
+  String get address => 'સરનામું';
+
+  @override
+  String get emergencyContact => 'ઈમરજન્સી સંપર્ક';
+
+  @override
+  String get truckNumber => 'ટ્રક નંબર';
+
+  @override
+  String get rcNumber => 'RC નંબર';
+
+  @override
+  String get pucExpiry => 'PUC મુદત';
+
+  @override
+  String get taxExpiry => 'ટેક્સ મુદત';
+
+  @override
+  String get docsExpiring => 'દસ્તાવેજની મુદત નજીક';
+
+  @override
+  String get expiryDates => 'મુદત તારીખો';
+
+  @override
+  String get addTruck => 'ટ્રક ઉમેરો';
+
+  @override
+  String get editTruck => 'ટ્રક સંપાદિત કરો';
+
+  @override
+  String get hitachi => 'હિટાચી';
+
+  @override
+  String get machines => 'મશીનો';
+
+  @override
+  String get rentals => 'ભાડા';
+
+  @override
+  String get noMachines => 'કોઈ મશીન નથી';
+
+  @override
+  String get noRentals => 'કોઈ ભાડું નથી';
+
+  @override
+  String get addMachine => 'મશીન ઉમેરો';
+
+  @override
+  String get editMachine => 'મશીન સંપાદિત કરો';
+
+  @override
+  String get machineNumber => 'મશીન નંબર';
+
+  @override
+  String get registration => 'રજિસ્ટ્રેશન';
+
+  @override
+  String get hourlyRate => 'કલાક દર';
+
+  @override
+  String get dailyRate => 'દૈનિક દર';
+
+  @override
+  String get monthlyRate => 'માસિક દર';
+
+  @override
+  String get addRental => 'ભાડું ઉમેરો';
+
+  @override
+  String get editRental => 'ભાડું સંપાદિત કરો';
+
+  @override
+  String get billingType => 'બિલિંગ';
+
+  @override
+  String get hourly => 'કલાક પ્રમાણે';
+
+  @override
+  String get daily => 'દૈનિક';
+
+  @override
+  String get billingMonthly => 'માસિક';
+
+  @override
+  String get hours => 'કલાક';
+
+  @override
+  String get days => 'દિવસ';
+
+  @override
+  String get months => 'મહિના';
+
+  @override
+  String get startDate => 'શરૂઆત તારીખ';
+
+  @override
+  String get endDate => 'અંત તારીખ';
+
+  @override
+  String get site => 'સાઇટ';
+
+  @override
+  String get operator => 'ઓપરેટર';
+
+  @override
+  String get advance => 'એડવાન્સ';
+
+  @override
+  String get statusBooked => 'બુક';
+
+  @override
+  String get statusRunning => 'ચાલુ';
+
+  @override
+  String get statusCompleted => 'પૂર્ણ';
+
+  @override
+  String get statusCancelled => 'રદ';
+
+  @override
+  String get salary => 'પગાર';
+
+  @override
+  String get advances => 'એડવાન્સ';
+
+  @override
+  String get monthlyPay => 'માસિક પગાર';
+
+  @override
+  String get noAdvances => 'કોઈ એડવાન્સ નથી';
+
+  @override
+  String get addAdvanceHint => 'અહીંથી ડ્રાઇવર એડવાન્સ નોંધો.';
+
+  @override
+  String get noSalaries => 'કોઈ પગાર એન્ટ્રી નથી';
+
+  @override
+  String get addSalaryHint => 'માસિક પગાર રેકોર્ડ બનાવો.';
+
+  @override
+  String get addAdvance => 'એડવાન્સ ઉમેરો';
+
+  @override
+  String get addSalary => 'પગાર ઉમેરો';
+
+  @override
+  String get reconcileMonth => 'આ મહિનો વિરુદ્ધ એડવાન્સ';
+
+  @override
+  String get advanced => 'એડવાન્સ આપ્યું';
+
+  @override
+  String get remaining => 'બાકી';
+
+  @override
+  String get baseAmount => 'મૂળ રકમ';
+
+  @override
+  String get advanceDeduction => 'એડવાન્સ કપાત';
+
+  @override
+  String get year => 'વર્ષ';
+
+  @override
+  String get month => 'મહિનો';
+
+  @override
+  String get ledger => 'લેજર';
+
+  @override
+  String get stockIn => 'સ્ટોક ઇન';
+
+  @override
+  String get stockOut => 'સ્ટોક આઉટ';
+
+  @override
+  String get issueToHitachi => 'હિટાચીને ઇશ્યૂ';
+
+  @override
+  String get vehicleQtyRequired => 'વાહન અને જથ્થો જરૂરી છે';
+
+  @override
+  String get moreHitachiSubtitle => 'મશીનો અને ભાડા';
+
+  @override
+  String get moreSalarySubtitle => 'એડવાન્સ અને માસિક પગાર';
+
+  @override
+  String get moreDriversSubtitleFull => 'CRUD, દસ્તાવેજ, સોંપેલી ટ્રક';
+
+  @override
+  String get moreTrucksSubtitleFull => 'ફ્લીટ, મુદત, દસ્તાવેજ';
+
+  @override
+  String get shareTrip => 'ટ્રિપ શેર કરો';
+
+  @override
+  String get shareWhatsApp => 'વોટ્સએપ';
+
+  @override
+  String get shareSms => 'SMS';
+
+  @override
+  String get tripShareHeading => 'ટ્રિપ કન્ફર્મ';
+
+  @override
+  String get tripShareThanks => 'આભાર.';
+
+  @override
+  String get cannotOpenWhatsApp => 'વોટ્સએપ ખોલી શક્યા નહીં';
+
+  @override
+  String get cannotOpenSms => 'મેસેજ ખોલી શક્યા નહીં';
+
+  @override
+  String get shareNoCustomerMobile =>
+      'ગ્રાહકનો મોબાઇલ નથી. તમે હજુ ચેટ અથવા નંબર પસંદ કરી શકો છો.';
+
+  @override
+  String get addTrip => 'ટ્રિપ ઉમેરો';
+
+  @override
+  String get editTrip => 'ટ્રિપ સંપાદિત કરો';
+
+  @override
+  String get startKm => 'શરૂઆત KM';
+
+  @override
+  String get endKm => 'અંત KM';
+
+  @override
+  String get dieselQty => 'ડીઝલ (લિટર)';
+
+  @override
+  String get dieselRate => 'ડીઝલ દર';
+
+  @override
+  String get toll => 'ટોલ';
+
+  @override
+  String get maintenance => 'મેઇન્ટેનન્સ';
+
+  @override
+  String get otherExpense => 'અન્ય ખર્ચ';
+
+  @override
+  String get driverSalary => 'ડ્રાઇવર પગાર';
+
+  @override
+  String get freightRate => 'ફ્રેટ દર (પ્રતિ યુનિટ)';
+
+  @override
+  String get advanceReceived => 'એડવાન્સ મળ્યું';
+
+  @override
+  String get compressor => 'કમ્પ્રેસર';
+
+  @override
+  String get shareTripAfterSave => 'ટ્રિપ સેવ થઈ. ગ્રાહકને વિગતો શેર કરીએ?';
+
+  @override
+  String get expenseTotal => 'કુલ ખર્ચ';
+
+  @override
+  String get expenseTruckTrips => 'ટ્રક અને ટ્રિપ';
+
+  @override
+  String get expenseHitachi => 'હિટાચી';
+
+  @override
+  String get expenseOtherGeneral => 'અન્ય / સામાન્ય';
+
+  @override
+  String expenseEntries(int count) {
+    return '$count એન્ટ્રી';
+  }
+
+  @override
+  String get topCategories => 'ટોચની કેટેગરી';
+
+  @override
+  String get recentExpenses => 'તાજેતરના ખર્ચ';
 }

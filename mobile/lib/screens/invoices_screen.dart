@@ -63,7 +63,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 52,
+          height: 56,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
@@ -74,6 +74,13 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   child: ChoiceChip(
                     label: Text(filter.$2),
                     selected: _status == filter.$1,
+                    labelStyle: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: _status == filter.$1
+                          ? AppColors.navy
+                          : AppColors.ink,
+                    ),
                     onSelected: (_) {
                       setState(() => _status = filter.$1);
                       _load();

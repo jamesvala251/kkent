@@ -17,3 +17,10 @@ String formatDate(String? value) {
     Intl.defaultLocale ?? 'en_IN',
   ).format(parsed);
 }
+
+String isoDate(DateTime value) => value.toIso8601String().split('T').first;
+
+String dateInput(String? value) {
+  if (value == null || value.isEmpty) return '';
+  return value.split('T').first;
+}

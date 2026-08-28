@@ -37,6 +37,12 @@ ThemeData buildAppTheme() {
         color: Colors.white,
       ),
     ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: Colors.white,
+      unselectedLabelColor: Color(0xB3FFFFFF),
+      indicatorColor: Colors.white,
+      dividerColor: Colors.transparent,
+    ),
     cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 0,
@@ -93,8 +99,20 @@ ThemeData buildAppTheme() {
     chipTheme: ChipThemeData(
       selectedColor: AppColors.navy.withValues(alpha: 0.12),
       backgroundColor: Colors.white,
+      disabledColor: AppColors.canvas,
       side: const BorderSide(color: AppColors.line),
-      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+      // Explicit colors: M3 ChoiceChip otherwise keeps onPrimary (white)
+      // for the selected label, which disappears on the light selected fill.
+      labelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+        color: AppColors.ink,
+      ),
+      secondaryLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        color: AppColors.navy,
+      ),
       showCheckmark: false,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     ),

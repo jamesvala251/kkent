@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
+import '../utils/expense_stats.dart';
 import '../utils/formatters.dart';
 import '../widgets/ui.dart';
 
@@ -17,6 +18,7 @@ class ExpensesScreen extends StatefulWidget {
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
   List<ExpenseItem> _rows = [];
+  double? _monthlyTotal;
   bool _loading = true;
   String? _error;
 
@@ -32,10 +34,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       _error = null;
     });
     try {
-      final rows = await context.read<AuthState>().api.expenses();
+      final api = context.read<AuthState>().api;
+      final rows = await api.expenses();
+      double? monthly;
+      try {
+        monthly = (await api.dashboardStats()).monthlyExpenses;
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _rows = rows;
+        _monthlyTotal = monthly;
         _loading = false;
       });
     } catch (e) {
@@ -59,73 +67,203 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           data: _rows,
           onRetry: _load,
           builder: (rows) {
-            if (rows.isEmpty) {
-              return EmptyState(
-                icon: Icons.payments_outlined,
-                title: l.noExpensesFound,
-                message: l.addExpenseHint,
-              );
-            }
+            final stats = ExpenseStats.fromRows(rows);
             return RefreshIndicator(
               onRefresh: _load,
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(0, 12, 0, 88),
-                itemCount: rows.length,
-                itemBuilder: (context, index) {
-                  final row = rows[index];
-                  return ListCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: AppColors.warning.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.payments_outlined,
-                              color: AppColors.warning,
-                            ),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 1.35,
+                            children: [
+                              StatTile(
+                                label: l.thisMonth,
+                                value: money(_monthlyTotal ?? stats.total),
+                                icon: Icons.calendar_month_outlined,
+                                color: AppColors.navy,
+                              ),
+                              StatTile(
+                                label: l.expenseTotal,
+                                value: money(stats.total),
+                                icon: Icons.payments_outlined,
+                                color: AppColors.indigo,
+                              ),
+                              StatTile(
+                                label: l.expenseTruckTrips,
+                                value: money(stats.truckTrips),
+                                icon: Icons.local_shipping_outlined,
+                                color: AppColors.success,
+                              ),
+                              StatTile(
+                                label: l.expenseHitachi,
+                                value: money(stats.hitachi),
+                                icon: Icons.precision_manufacturing_outlined,
+                                color: AppColors.warning,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _SummaryPill(
+                                  label: l.expenseOtherGeneral,
+                                  value: money(stats.other),
+                                  icon: Icons.account_balance_wallet_outlined,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _SummaryPill(
+                                  label: l.recentExpenses,
+                                  value: l.expenseEntries(stats.count),
+                                  icon: Icons.receipt_long_outlined,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (stats.topCategories.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            SectionCard(
+                              title: l.topCategories,
                               children: [
-                                Text(
-                                  row.categoryName ?? 'Expense',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
+                                for (final row in stats.topCategories)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            row.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                        MoneyText(
+                                          row.amount,
+                                          color: AppColors.danger,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  [
-                                        formatDate(row.expenseDate),
-                                        row.truckNumber,
-                                        row.description,
-                                      ]
-                                      .where((v) => v != null && v.isNotEmpty)
-                                      .join('  ·  '),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppColors.muted,
-                                    fontSize: 13,
-                                  ),
-                                ),
                               ],
                             ),
+                          ],
+                          const SizedBox(height: 12),
+                          Text(
+                            l.recentExpenses,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
                           ),
-                          MoneyText(row.amount, color: AppColors.danger),
+                          const SizedBox(height: 8),
                         ],
                       ),
                     ),
-                  );
-                },
+                  ),
+                  if (rows.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: EmptyState(
+                        icon: Icons.payments_outlined,
+                        title: l.noExpensesFound,
+                        message: l.addExpenseHint,
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 88),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final row = rows[index];
+                            return ListCard(
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.warning.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        row.isHitachi
+                                            ? Icons.precision_manufacturing_outlined
+                                            : row.isTruckTrip
+                                            ? Icons.local_shipping_outlined
+                                            : Icons.payments_outlined,
+                                        color: AppColors.warning,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            row.categoryName ?? l.expense,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            [
+                                                  formatDate(row.expenseDate),
+                                                  row.truckNumber,
+                                                  row.description,
+                                                ]
+                                                .where(
+                                                  (v) =>
+                                                      v != null &&
+                                                      v.isNotEmpty,
+                                                )
+                                                .join('  ·  '),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: AppColors.muted,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    MoneyText(
+                                      row.amount,
+                                      color: AppColors.danger,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          childCount: rows.length,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             );
           },
@@ -146,6 +284,57 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _SummaryPill extends StatelessWidget {
+  const _SummaryPill({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.navy, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

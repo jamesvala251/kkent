@@ -64,6 +64,16 @@ class ApiClient {
     return _send(() => _dio.delete(path));
   }
 
+  Future<dynamic> postMultipart(String path, FormData data) {
+    return _send(
+      () => _dio.post(
+        path,
+        data: data,
+        options: Options(contentType: 'multipart/form-data'),
+      ),
+    );
+  }
+
   Future<dynamic> _send(Future<Response<dynamic>> Function() request) async {
     try {
       final response = await request();

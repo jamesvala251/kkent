@@ -292,13 +292,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreCustomersSubtitle => 'Ledgers and outstanding';
 
   @override
-  String get moreTrucksSubtitle => 'Fleet and document expiry';
+  String get moreTrucksSubtitle => 'Fleet, expiry dates, and documents';
 
   @override
-  String get moreDriversSubtitle => 'Contacts and assigned trucks';
+  String get moreDriversSubtitle => 'CRUD, documents, assigned truck';
 
   @override
-  String get moreDieselSubtitle => 'Stock, purchases, and issues';
+  String get moreDieselSubtitle => 'Stock in/out, ledger, Hitachi issue';
 
   @override
   String get moreOutstandingSubtitle => 'Unpaid and partial invoices';
@@ -561,4 +561,347 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get user => 'User';
+
+  @override
+  String get deleteConfirm => 'This record will be removed.';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get noDocuments => 'No documents uploaded';
+
+  @override
+  String get fileRequired => 'Title and file are required';
+
+  @override
+  String get title => 'Title';
+
+  @override
+  String get documentType => 'Document type';
+
+  @override
+  String get other => 'Other';
+
+  @override
+  String get chooseFile => 'Choose file';
+
+  @override
+  String get uploadDocument => 'Upload document';
+
+  @override
+  String get expiry => 'Expiry';
+
+  @override
+  String get addDriver => 'Add driver';
+
+  @override
+  String get editDriver => 'Edit driver';
+
+  @override
+  String get requiredField => 'Please fill the required fields';
+
+  @override
+  String get assignedTruck => 'Assigned truck';
+
+  @override
+  String get none => 'None';
+
+  @override
+  String get salaryType => 'Salary type';
+
+  @override
+  String get salaryMonthly => 'Monthly';
+
+  @override
+  String get salaryPerTrip => 'Per trip';
+
+  @override
+  String get salaryBoth => 'Both';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get emergencyContact => 'Emergency contact';
+
+  @override
+  String get truckNumber => 'Truck number';
+
+  @override
+  String get rcNumber => 'RC number';
+
+  @override
+  String get pucExpiry => 'PUC expiry';
+
+  @override
+  String get taxExpiry => 'Tax expiry';
+
+  @override
+  String get docsExpiring => 'Docs expiring';
+
+  @override
+  String get expiryDates => 'Expiry dates';
+
+  @override
+  String get addTruck => 'Add truck';
+
+  @override
+  String get editTruck => 'Edit truck';
+
+  @override
+  String get hitachi => 'Hitachi';
+
+  @override
+  String get machines => 'Machines';
+
+  @override
+  String get rentals => 'Rentals';
+
+  @override
+  String get noMachines => 'No machines';
+
+  @override
+  String get noRentals => 'No rentals';
+
+  @override
+  String get addMachine => 'Add machine';
+
+  @override
+  String get editMachine => 'Edit machine';
+
+  @override
+  String get machineNumber => 'Machine number';
+
+  @override
+  String get registration => 'Registration';
+
+  @override
+  String get hourlyRate => 'Hourly rate';
+
+  @override
+  String get dailyRate => 'Daily rate';
+
+  @override
+  String get monthlyRate => 'Monthly rate';
+
+  @override
+  String get addRental => 'Add rental';
+
+  @override
+  String get editRental => 'Edit rental';
+
+  @override
+  String get billingType => 'Billing';
+
+  @override
+  String get hourly => 'Hourly';
+
+  @override
+  String get daily => 'Daily';
+
+  @override
+  String get billingMonthly => 'Monthly';
+
+  @override
+  String get hours => 'Hours';
+
+  @override
+  String get days => 'Days';
+
+  @override
+  String get months => 'Months';
+
+  @override
+  String get startDate => 'Start date';
+
+  @override
+  String get endDate => 'End date';
+
+  @override
+  String get site => 'Site';
+
+  @override
+  String get operator => 'Operator';
+
+  @override
+  String get advance => 'Advance';
+
+  @override
+  String get statusBooked => 'Booked';
+
+  @override
+  String get statusRunning => 'Running';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get salary => 'Salary';
+
+  @override
+  String get advances => 'Advances';
+
+  @override
+  String get monthlyPay => 'Monthly pay';
+
+  @override
+  String get noAdvances => 'No advances';
+
+  @override
+  String get addAdvanceHint => 'Record a driver advance from here.';
+
+  @override
+  String get noSalaries => 'No salary entries';
+
+  @override
+  String get addSalaryHint => 'Create a monthly salary record.';
+
+  @override
+  String get addAdvance => 'Add advance';
+
+  @override
+  String get addSalary => 'Add salary';
+
+  @override
+  String get reconcileMonth => 'This month vs advances';
+
+  @override
+  String get advanced => 'Advanced';
+
+  @override
+  String get remaining => 'Remaining';
+
+  @override
+  String get baseAmount => 'Base amount';
+
+  @override
+  String get advanceDeduction => 'Advance deduction';
+
+  @override
+  String get year => 'Year';
+
+  @override
+  String get month => 'Month';
+
+  @override
+  String get ledger => 'Ledger';
+
+  @override
+  String get stockIn => 'Stock in';
+
+  @override
+  String get stockOut => 'Stock out';
+
+  @override
+  String get issueToHitachi => 'Issue to Hitachi';
+
+  @override
+  String get vehicleQtyRequired => 'Vehicle and quantity are required';
+
+  @override
+  String get moreHitachiSubtitle => 'Machines and rentals';
+
+  @override
+  String get moreSalarySubtitle => 'Advances and monthly pay';
+
+  @override
+  String get moreDriversSubtitleFull => 'CRUD, documents, assigned truck';
+
+  @override
+  String get moreTrucksSubtitleFull => 'Fleet, expiry dates, documents';
+
+  @override
+  String get shareTrip => 'Share trip';
+
+  @override
+  String get shareWhatsApp => 'WhatsApp';
+
+  @override
+  String get shareSms => 'SMS';
+
+  @override
+  String get tripShareHeading => 'Trip confirmed';
+
+  @override
+  String get tripShareThanks => 'Thank you.';
+
+  @override
+  String get cannotOpenWhatsApp => 'Could not open WhatsApp';
+
+  @override
+  String get cannotOpenSms => 'Could not open Messages';
+
+  @override
+  String get shareNoCustomerMobile =>
+      'Customer mobile is missing. You can still pick the chat or number.';
+
+  @override
+  String get addTrip => 'Add trip';
+
+  @override
+  String get editTrip => 'Edit trip';
+
+  @override
+  String get startKm => 'Start KM';
+
+  @override
+  String get endKm => 'End KM';
+
+  @override
+  String get dieselQty => 'Diesel (litres)';
+
+  @override
+  String get dieselRate => 'Diesel rate';
+
+  @override
+  String get toll => 'Toll';
+
+  @override
+  String get maintenance => 'Maintenance';
+
+  @override
+  String get otherExpense => 'Other expense';
+
+  @override
+  String get driverSalary => 'Driver salary';
+
+  @override
+  String get freightRate => 'Freight rate (per unit)';
+
+  @override
+  String get advanceReceived => 'Advance received';
+
+  @override
+  String get compressor => 'Compressor';
+
+  @override
+  String get shareTripAfterSave =>
+      'Trip saved. Share details with the customer now?';
+
+  @override
+  String get expenseTotal => 'All expenses';
+
+  @override
+  String get expenseTruckTrips => 'Truck & trips';
+
+  @override
+  String get expenseHitachi => 'Hitachi';
+
+  @override
+  String get expenseOtherGeneral => 'Other / general';
+
+  @override
+  String expenseEntries(int count) {
+    return '$count entries';
+  }
+
+  @override
+  String get topCategories => 'Top categories';
+
+  @override
+  String get recentExpenses => 'Recent expenses';
 }
