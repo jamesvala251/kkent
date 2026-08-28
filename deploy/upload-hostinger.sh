@@ -30,19 +30,35 @@ REMOTE_PUBLIC="${HOSTINGER_PUBLIC_HTML:-${REMOTE_USER_HOME}/domains/kk-enterpris
 REMOTE_APP="${REMOTE_PUBLIC}/backend"
 SSH_IDENTITY="${HOSTINGER_SSH_KEY_FILE:-}"
 
-SSH_OPTS=(-p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
-RSYNC_SSH="ssh -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+SSH_OPTS=(-p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+SCP_OPTS=(-P "${SSH_PORT}" -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=60)
+RSYNC_SSH="ssh -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
 if [[ -n "${SSH_IDENTITY}" ]]; then
   SSH_OPTS+=(-i "${SSH_IDENTITY}")
-  RSYNC_SSH="ssh -p ${SSH_PORT} -i ${SSH_IDENTITY} -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+  SCP_OPTS+=(-i "${SSH_IDENTITY}")
+  RSYNC_SSH="ssh -p ${SSH_PORT} -i ${SSH_IDENTITY} -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 fi
+
+retry() {
+  local attempts="${1}"
+  shift
+  local n=1
+  until "$@"; do
+    if (( n >= attempts )); then
+      return 1
+    fi
+    echo "Retry ${n}/${attempts} failed — waiting before next attempt..."
+    sleep $((n * 15))
+    n=$((n + 1))
+  done
+}
 
 upload_backend() {
   echo "==> Uploading Laravel backend to ${SSH_HOST}:${REMOTE_APP}"
-  ssh "${SSH_OPTS[@]}" "${SSH_HOST}" "mkdir -p ${REMOTE_APP}"
+  retry 3 ssh "${SSH_OPTS[@]}" "${SSH_HOST}" "mkdir -p ${REMOTE_APP}"
 
-  rsync -avz --progress -e "${RSYNC_SSH}" \
+  retry 3 rsync -avz --partial --progress -e "${RSYNC_SSH}" \
     --exclude '.env' \
     --exclude '.env.*' \
     --exclude '.git' \
@@ -57,29 +73,29 @@ upload_backend() {
 
 upload_public() {
   echo "==> Uploading public_html files to ${SSH_HOST}:${REMOTE_PUBLIC}"
-  ssh "${SSH_OPTS[@]}" "${SSH_HOST}" "mkdir -p ${REMOTE_PUBLIC}/assets ${REMOTE_PUBLIC}/images"
+  retry 3 ssh "${SSH_OPTS[@]}" "${SSH_HOST}" "mkdir -p ${REMOTE_PUBLIC}/assets ${REMOTE_PUBLIC}/images"
 
-  scp "${SSH_OPTS[@]}" "${ROOT}/deploy/hostinger/public_html/index.php" "${SSH_HOST}:${REMOTE_PUBLIC}/index.php"
-  scp "${SSH_OPTS[@]}" "${ROOT}/deploy/hostinger/public_html/.htaccess" "${SSH_HOST}:${REMOTE_PUBLIC}/.htaccess"
-  scp "${SSH_OPTS[@]}" "${ROOT}/backend/public/app.html" "${SSH_HOST}:${REMOTE_PUBLIC}/app.html"
-  scp "${SSH_OPTS[@]}" "${ROOT}/backend/public/app.html" "${SSH_HOST}:${REMOTE_PUBLIC}/index.html"
+  retry 3 scp "${SCP_OPTS[@]}" "${ROOT}/deploy/hostinger/public_html/index.php" "${SSH_HOST}:${REMOTE_PUBLIC}/index.php"
+  retry 3 scp "${SCP_OPTS[@]}" "${ROOT}/deploy/hostinger/public_html/.htaccess" "${SSH_HOST}:${REMOTE_PUBLIC}/.htaccess"
+  retry 3 scp "${SCP_OPTS[@]}" "${ROOT}/backend/public/app.html" "${SSH_HOST}:${REMOTE_PUBLIC}/app.html"
+  retry 3 scp "${SCP_OPTS[@]}" "${ROOT}/backend/public/app.html" "${SSH_HOST}:${REMOTE_PUBLIC}/index.html"
 
   if [[ -f "${ROOT}/backend/public/robots.txt" ]]; then
-    scp "${SSH_OPTS[@]}" "${ROOT}/backend/public/robots.txt" "${SSH_HOST}:${REMOTE_PUBLIC}/robots.txt"
+    retry 3 scp "${SCP_OPTS[@]}" "${ROOT}/backend/public/robots.txt" "${SSH_HOST}:${REMOTE_PUBLIC}/robots.txt"
   fi
 
-  rsync -avz --delete --progress -e "${RSYNC_SSH}" \
+  retry 3 rsync -avz --delete --partial --progress -e "${RSYNC_SSH}" \
     "${ROOT}/backend/public/assets/" "${SSH_HOST}:${REMOTE_PUBLIC}/assets/"
 
   if [[ -d "${ROOT}/backend/public/images" ]]; then
-    rsync -avz --progress -e "${RSYNC_SSH}" \
+    retry 3 rsync -avz --partial --progress -e "${RSYNC_SSH}" \
       "${ROOT}/backend/public/images/" "${SSH_HOST}:${REMOTE_PUBLIC}/images/"
   fi
 }
 
 run_remote_setup() {
   echo "==> Running Laravel setup on server"
-  ssh "${SSH_OPTS[@]}" "${SSH_HOST}" <<EOF
+  retry 3 ssh "${SSH_OPTS[@]}" "${SSH_HOST}" <<EOF
 set -e
 cd ${REMOTE_APP}
 if command -v composer >/dev/null 2>&1; then
