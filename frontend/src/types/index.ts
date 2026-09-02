@@ -105,6 +105,7 @@ export interface HitachiRental {
   months?: number;
   rate: number;
   total_amount: number;
+  billable_amount?: number;
   advance_received?: number;
   balance?: number;
   operator_name?: string;

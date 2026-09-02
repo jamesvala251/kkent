@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\HitachiRentalService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,7 @@ class HitachiRentalResource extends JsonResource
             'months' => $this->months,
             'rate' => $this->rate,
             'total_amount' => $this->total_amount,
+            'billable_amount' => app(HitachiRentalService::class)->billableAmount($this->resource),
             'advance_received' => $this->advance_received,
             'balance' => $this->balance,
             'operator_name' => $this->operator_name,

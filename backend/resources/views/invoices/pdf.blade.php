@@ -77,7 +77,7 @@
                         @elseif($invoice->hitachiRental->billing_type === 'daily')
                             · {{ number_format((float) $invoice->hitachiRental->days, 2) }} days
                         @elseif($invoice->hitachiRental->billing_type === 'monthly')
-                            · {{ number_format((float) $invoice->hitachiRental->months, 2) }} months
+                            · {{ number_format((float) ($invoice->hitachiRental->months > 0 ? $invoice->hitachiRental->months : 1), 2) }} months
                         @endif
                         @if($invoice->hitachiRental->site_location)
                             · Site: {{ $invoice->hitachiRental->site_location }}
@@ -88,7 +88,7 @@
                         @endif
                     </small>
                 </td>
-                <td>₹{{ number_format((float) $invoice->hitachiRental->total_amount, 2) }}</td>
+                <td>₹{{ number_format(app(\App\Services\HitachiRentalService::class)->billableAmount($invoice->hitachiRental), 2) }}</td>
             </tr>
             @elseif($invoice->trips && $invoice->trips->count())
                 @if($invoice->billing_month)

@@ -114,6 +114,7 @@ export default function HitachiManagement() {
       const days = Math.max(1, dayjs(rentalForm.end_date).diff(dayjs(rentalForm.start_date), 'day') + 1);
       months = Math.round((days / 30) * 100) / 100;
     }
+    if (!months) months = 1;
     return months * rate;
   }, [rentalForm]);
 

@@ -90,6 +90,33 @@ class HitachiRentalService
         $rental->delete();
     }
 
+    public function billableAmount(HitachiRental $rental): float
+    {
+        $stored = (float) $rental->total_amount;
+        if ($stored > 0) {
+            return $stored;
+        }
+
+        $calculated = $this->calculateFields($rental->toArray(), $rental);
+
+        return (float) $calculated['total_amount'];
+    }
+
+    public function recalculate(HitachiRental $rental): HitachiRental
+    {
+        $data = $this->calculateFields($rental->toArray(), $rental);
+        $rental->update([
+            'rate' => $data['rate'],
+            'total_amount' => $data['total_amount'],
+            'balance' => $data['balance'],
+            'hours' => $data['hours'] ?? $rental->hours ?? 0,
+            'days' => $data['days'] ?? $rental->days ?? 0,
+            'months' => $data['months'] ?? $rental->months ?? 0,
+        ]);
+
+        return $rental->fresh(['hitachi', 'customer']);
+    }
+
     private function calculateFields(array $data, ?HitachiRental $existing = null): array
     {
         $billingType = $data['billing_type'] ?? $existing?->billing_type ?? 'hourly';
@@ -160,7 +187,8 @@ class HitachiRentalService
             return round($days / 30, 2);
         }
 
-        return 0;
+        // Ongoing monthly rentals without an end date bill as one month by default.
+        return 1;
     }
 
     private function inclusiveDays(string $start, string $end): float

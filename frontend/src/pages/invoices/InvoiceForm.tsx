@@ -112,7 +112,19 @@ const resolveRate = (rate: number | null | undefined, amount: number | null | un
 const billingLabel = (rental: HitachiRental) => {
   if (rental.billing_type === 'hourly') return `${rental.hours ?? 0} hrs`;
   if (rental.billing_type === 'daily') return `${rental.days ?? 0} days`;
-  return `${rental.months ?? 0} mo`;
+  const months = Number(rental.months) > 0 ? rental.months : 1;
+  return `${months} mo`;
+};
+
+const rentalBillableAmount = (rental?: HitachiRental | null) => {
+  if (!rental) return 0;
+  const fromApi = Number(rental.billable_amount ?? rental.total_amount) || 0;
+  if (fromApi > 0) return fromApi;
+  const rate = Number(rental.rate) || 0;
+  if (rental.billing_type === 'hourly') return (Number(rental.hours) || 0) * rate;
+  if (rental.billing_type === 'daily') return (Number(rental.days) || 0) * rate;
+  const months = Number(rental.months) > 0 ? Number(rental.months) : 1;
+  return months * rate;
 };
 
 const tripAmount = (trip: Trip) => {
@@ -189,7 +201,7 @@ export default function InvoiceForm() {
     () => extraCharges.reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
     [extraCharges],
   );
-  const rentalTotal = hasRental ? Number(selectedRental?.total_amount) || 0 : 0;
+  const rentalTotal = hasRental ? rentalBillableAmount(selectedRental) : 0;
   const baseAmount = hasRental ? rentalTotal : tripTotal;
   const subtotal = baseAmount + extraTotal;
   const gst = useMemo(
@@ -489,7 +501,7 @@ export default function InvoiceForm() {
                   <MenuItem value="">None</MenuItem>
                   {customerRentals.map((r) => (
                     <MenuItem key={r.id} value={r.id}>
-                      {r.rental_number} · {r.hitachi?.machine_number ?? 'Machine'} · {billingLabel(r)} · {formatCurrency(Number(r.total_amount))}
+                      {r.rental_number} · {r.hitachi?.machine_number ?? 'Machine'} · {billingLabel(r)} · {formatCurrency(rentalBillableAmount(r))}
                     </MenuItem>
                   ))}
                 </TextField>

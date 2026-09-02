@@ -7,6 +7,7 @@ use App\Models\HitachiRental;
 use App\Models\Invoice;
 use App\Models\Trip;
 use App\Services\AuditService;
+use App\Services\HitachiRentalService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,10 @@ class InvoiceController extends ApiController
 {
     private const RELATIONS = ['customer', 'trip', 'trips.truck', 'trips.driver', 'hitachiRental.hitachi'];
 
-    public function __construct(private AuditService $auditService) {}
+    public function __construct(
+        private AuditService $auditService,
+        private HitachiRentalService $hitachiRentalService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -311,7 +315,7 @@ class InvoiceController extends ApiController
         if ($rentalId) {
             $rental = HitachiRental::find($rentalId);
 
-            return round((float) ($rental?->total_amount ?? 0) + $extraTotal, 2);
+            return round(($rental ? $this->hitachiRentalService->billableAmount($rental) : 0) + $extraTotal, 2);
         }
 
         return round($extraTotal, 2);
