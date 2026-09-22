@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends ApiController
 {
-    private const RELATIONS = ['customer', 'trip', 'trips.truck', 'trips.driver', 'hitachiRental.hitachi'];
+    private const RELATIONS = ['customer', 'trip.truck', 'trips.truck', 'trips.driver', 'hitachiRental.hitachi'];
 
     public function __construct(
         private AuditService $auditService,

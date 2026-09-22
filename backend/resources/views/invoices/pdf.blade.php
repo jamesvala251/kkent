@@ -58,6 +58,8 @@
         <thead>
             <tr>
                 <th>Description</th>
+                <th>Truck No.</th>
+                <th>Ton</th>
                 <th>Amount</th>
             </tr>
         </thead>
@@ -88,12 +90,14 @@
                         @endif
                     </small>
                 </td>
+                <td>—</td>
+                <td>—</td>
                 <td>₹{{ number_format(app(\App\Services\HitachiRentalService::class)->billableAmount($invoice->hitachiRental), 2) }}</td>
             </tr>
             @elseif($invoice->trips && $invoice->trips->count())
                 @if($invoice->billing_month)
                 <tr>
-                    <td colspan="2"><strong>Transport services — {{ \Carbon\Carbon::createFromFormat('Y-m-d', $invoice->billing_month.'-01')->format('F Y') }} ({{ $invoice->trips->count() }} trips)</strong></td>
+                    <td colspan="4"><strong>Transport services — {{ \Carbon\Carbon::createFromFormat('Y-m-d', $invoice->billing_month.'-01')->format('F Y') }} ({{ $invoice->trips->count() }} trips)</strong></td>
                 </tr>
                 @endif
                 @foreach($invoice->trips as $trip)
@@ -107,23 +111,39 @@
                             <br><small>{{ $trip->from_location ?: '-' }} → {{ $trip->to_location ?: '-' }}</small>
                         @endif
                     </td>
+                    <td>{{ $trip->truck?->truck_number ?: '—' }}</td>
+                    <td>{{ $trip->weight !== null ? number_format((float) $trip->weight, 2) : '—' }}</td>
                     <td>₹{{ number_format($trip->billableAmount(), 2) }}</td>
                 </tr>
                 @endforeach
             @elseif($invoice->trip)
             <tr>
-                <td>Transport Services — Trip {{ $invoice->trip->trip_number }}</td>
+                <td>
+                    Transport Services — Trip {{ $invoice->trip->trip_number }}
+                    @if($invoice->trip->start_date)
+                        · {{ $invoice->trip->start_date->format('d M Y') }}
+                    @endif
+                    @if($invoice->trip->from_location || $invoice->trip->to_location)
+                        <br><small>{{ $invoice->trip->from_location ?: '-' }} → {{ $invoice->trip->to_location ?: '-' }}</small>
+                    @endif
+                </td>
+                <td>{{ $invoice->trip->truck?->truck_number ?: '—' }}</td>
+                <td>{{ $invoice->trip->weight !== null ? number_format((float) $invoice->trip->weight, 2) : '—' }}</td>
                 <td>₹{{ number_format($invoice->trip->billableAmount(), 2) }}</td>
             </tr>
             @elseif(! $invoice->extraChargeLines())
             <tr>
                 <td>Transport / Equipment Services</td>
+                <td>—</td>
+                <td>—</td>
                 <td>₹{{ number_format($invoice->subtotal, 2) }}</td>
             </tr>
             @endif
             @foreach($invoice->extraChargeLines() as $charge)
             <tr>
                 <td>{{ $charge['description'] }}</td>
+                <td>—</td>
+                <td>—</td>
                 <td>₹{{ number_format($charge['amount'], 2) }}</td>
             </tr>
             @endforeach
