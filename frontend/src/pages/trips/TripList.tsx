@@ -67,7 +67,13 @@ export default function TripList() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/trips', { params: buildFilterParams(appliedFilters) });
+      const { data } = await api.get('/trips', {
+        params: {
+          ...buildFilterParams(appliedFilters),
+          sort_by: 'start_date',
+          sort_order: 'desc',
+        },
+      });
       const list: Trip[] = Array.isArray(data) ? data : (data?.data ?? []);
       setRows(list);
       const apiSummary = data && !Array.isArray(data) ? data.summary : undefined;

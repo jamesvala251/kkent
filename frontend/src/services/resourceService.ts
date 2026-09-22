@@ -140,5 +140,12 @@ export const formatCurrency = (value: number) =>
 
 export const formatDate = (value: string) => {
   if (!value) return '-';
-  return new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  // Date-only values (YYYY-MM-DD) must be parsed as local calendar dates,
+  // otherwise UTC midnight can shift the day in some timezones.
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };

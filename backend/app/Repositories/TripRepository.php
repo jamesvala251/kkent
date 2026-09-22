@@ -48,7 +48,8 @@ class TripRepository extends BaseRepository
     public function all(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->applyFilters($this->query()->with(['customer', 'truck', 'driver', 'hitachi']), $filters);
-        $query->orderBy($filters['sort_by'] ?? 'created_at', $filters['sort_order'] ?? 'desc');
+        $query->orderBy($filters['sort_by'] ?? 'start_date', $filters['sort_order'] ?? 'desc')
+            ->orderByDesc('id');
 
         return $query->paginate($filters['per_page'] ?? $perPage);
     }
