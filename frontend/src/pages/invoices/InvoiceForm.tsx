@@ -540,8 +540,9 @@ export default function InvoiceForm() {
                     <TableRow>
                       <TableCell>Trip #</TableCell>
                       <TableCell>Date</TableCell>
-                      <TableCell>Route</TableCell>
-                      <TableCell>Truck / Driver</TableCell>
+                      <TableCell>Truck</TableCell>
+                      <TableCell align="right">Ton</TableCell>
+                      <TableCell align="right">Price</TableCell>
                       <TableCell align="right">Amount</TableCell>
                       <TableCell align="right" sx={{ width: 56 }} />
                     </TableRow>
@@ -551,13 +552,12 @@ export default function InvoiceForm() {
                       <TableRow key={trip.id}>
                         <TableCell>{trip.trip_number}</TableCell>
                         <TableCell>{formatDate(tripDateValue(trip.start_date))}</TableCell>
-                        <TableCell>
-                          {trip.from_location || trip.to_location
-                            ? `${trip.from_location || '-'} → ${trip.to_location || '-'}`
-                            : '-'}
+                        <TableCell>{trip.truck?.truck_number || '-'}</TableCell>
+                        <TableCell align="right">
+                          {trip.weight != null ? Number(trip.weight).toLocaleString('en-IN') : '-'}
                         </TableCell>
-                        <TableCell>
-                          {[trip.truck?.truck_number, trip.driver?.name].filter(Boolean).join(' · ') || '-'}
+                        <TableCell align="right">
+                          {trip.freight != null ? formatCurrency(Number(trip.freight) || 0) : '-'}
                         </TableCell>
                         <TableCell align="right">{formatCurrency(tripAmount(trip))}</TableCell>
                         <TableCell align="right">
@@ -590,7 +590,7 @@ export default function InvoiceForm() {
                     ))}
                     {!loadingTrips && monthTrips.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} align="center">
+                        <TableCell colSpan={7} align="center">
                           {selectedCustomerId
                             ? 'No trips on this invoice. Change customer or month to reload the list.'
                             : '—'}
@@ -601,9 +601,15 @@ export default function InvoiceForm() {
                   {monthTrips.length > 0 && (
                     <TableFooter>
                       <TableRow>
-                        <TableCell colSpan={4} sx={{ fontWeight: 700 }}>
+                        <TableCell colSpan={3} sx={{ fontWeight: 700 }}>
                           Total ({monthTrips.length} trip{monthTrips.length === 1 ? '' : 's'})
                         </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {monthTrips
+                            .reduce((sum, trip) => sum + (Number(trip.weight) || 0), 0)
+                            .toLocaleString('en-IN')}
+                        </TableCell>
+                        <TableCell />
                         <TableCell align="right" sx={{ fontWeight: 700 }}>
                           {formatCurrency(monthTrips.reduce((sum, trip) => sum + tripAmount(trip), 0))}
                         </TableCell>
