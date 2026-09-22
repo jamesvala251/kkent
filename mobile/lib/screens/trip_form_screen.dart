@@ -98,6 +98,15 @@ class _TripFormScreenState extends State<TripFormScreen> {
         _customerId ??= customers.isEmpty ? null : customers.first.id;
         _truckId ??= trucks.isEmpty ? null : trucks.first.id;
         _driverId ??= drivers.isEmpty ? null : drivers.first.id;
+        if (widget.trip == null && _customerId != null && _freight.text.trim().isEmpty) {
+          final matches = customers.where((c) => c.id == _customerId);
+          if (matches.isNotEmpty) {
+            final rate = matches.first.rate;
+            if (rate != null && rate > 0) {
+              _freight.text = rate.toString();
+            }
+          }
+        }
         _loading = false;
       });
     } catch (e) {
@@ -203,7 +212,18 @@ class _TripFormScreenState extends State<TripFormScreen> {
                   items: _customers,
                   idOf: (item) => item.id,
                   labelOf: (item) => item.name,
-                  onChanged: (value) => setState(() => _customerId = value),
+                  onChanged: (value) {
+                    setState(() {
+                      _customerId = value;
+                      final matches = _customers.where((c) => c.id == value);
+                      if (matches.isNotEmpty) {
+                        final rate = matches.first.rate;
+                        if (rate != null && rate > 0) {
+                          _freight.text = rate.toString();
+                        }
+                      }
+                    });
+                  },
                 ),
                 const FormGap(),
                 _IdDropdown<TruckItem>(

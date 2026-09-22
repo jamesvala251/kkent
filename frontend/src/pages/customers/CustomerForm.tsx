@@ -154,7 +154,14 @@ export default function CustomerForm() {
                 <TextField {...register('email')} label="Email" fullWidth margin="normal" error={!!errors.email} helperText={errors.email?.message} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField {...register('rate')} label="Customer Rate" type="number" fullWidth margin="normal" />
+                <TextField
+                  {...register('rate')}
+                  label="Customer Rate (₹/Ton)"
+                  type="number"
+                  fullWidth
+                  margin="normal"
+                  helperText="Used as default freight rate when creating trips for this customer"
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField {...register('credit_limit')} label="Credit Limit" type="number" fullWidth margin="normal" />

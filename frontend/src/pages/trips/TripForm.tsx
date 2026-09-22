@@ -365,6 +365,15 @@ export default function TripForm() {
                     value={watched.customer_id ?? ''}
                     error={!!errors.customer_id}
                     helperText={errors.customer_id?.message}
+                    onChange={(e) => {
+                      const customerId = Number(e.target.value) || 0;
+                      setValue('customer_id', customerId, { shouldValidate: true });
+                      const customer = customers.find((c) => c.id === customerId);
+                      const rate = Number(customer?.rate) || 0;
+                      if (rate > 0) {
+                        setValue('freight', rate, { shouldDirty: true });
+                      }
+                    }}
                   >
                     {customers.map((c) => (
                       <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
@@ -575,7 +584,14 @@ export default function TripForm() {
                   <TextField {...register('driver_salary')} label="Driver Salary" type="number" fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('freight')} label="Freight (Rate/Ton)" type="number" fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }} />
+                  <TextField
+                    {...register('freight')}
+                    label="Freight (₹/Ton)"
+                    type="number"
+                    fullWidth
+                    helperText="Auto-filled from customer rate when available"
+                    slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <TextField {...register('weight')} label="Weight (Ton)" type="number" fullWidth />

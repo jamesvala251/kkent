@@ -102,7 +102,7 @@ export default function CustomerList() {
     { id: 'mobile', label: 'Mobile' },
     {
       id: 'rate',
-      label: 'Customer Rate',
+      label: 'Rate (₹/Ton)',
       align: 'right',
       format: (row) => formatCurrency(Number(row.rate) || 0),
     },
