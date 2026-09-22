@@ -141,10 +141,10 @@ class ReportController extends ApiController
         $query = Trip::query();
 
         if ($request->date_from) {
-            $query->whereDate('end_date', '>=', $request->date_from);
+            $query->whereDate('start_date', '>=', $request->date_from);
         }
         if ($request->date_to) {
-            $query->whereDate('end_date', '<=', $request->date_to);
+            $query->whereDate('start_date', '<=', $request->date_to);
         }
 
         $trips = $query->get();

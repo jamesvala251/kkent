@@ -42,7 +42,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
   int? _driverId;
   int? _hitachiId;
   String _startDate = isoDate(DateTime.now());
-  String? _endDate;
   bool _compressor = false;
   bool _loading = true;
   bool _saving = false;
@@ -75,8 +74,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
       _startDate = dateInput(trip.startDate).isEmpty
           ? isoDate(DateTime.now())
           : dateInput(trip.startDate);
-      _endDate = dateInput(trip.endDate);
-      if (_endDate != null && _endDate!.isEmpty) _endDate = null;
       _compressor = trip.compressor;
     }
     _loadLookups();
@@ -154,7 +151,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
       'driver_id': _driverId,
       if (_hitachiId != null) 'hitachi_id': _hitachiId,
       'start_date': _startDate,
-      if (_endDate != null && _endDate!.isNotEmpty) 'end_date': _endDate,
+      'end_date': null,
       'from_location': _from.text.trim(),
       'to_location': _to.text.trim(),
       'material': _material.text.trim(),
@@ -241,17 +238,11 @@ class _TripFormScreenState extends State<TripFormScreen> {
                 ],
                 const FormGap(),
                 DatePickerTile(
-                  label: l.startDate,
+                  label: l.date,
                   value: _startDate,
                   optional: false,
                   onChanged: (value) =>
                       setState(() => _startDate = value ?? _startDate),
-                ),
-                const FormGap(),
-                DatePickerTile(
-                  label: l.endDate,
-                  value: _endDate,
-                  onChanged: (value) => setState(() => _endDate = value),
                 ),
                 const FormGap(),
                 TextField(

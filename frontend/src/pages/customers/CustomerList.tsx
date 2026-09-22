@@ -100,6 +100,12 @@ export default function CustomerList() {
     { id: 'name', label: 'Name', minWidth: 180 },
     { id: 'company_name', label: 'Company' },
     { id: 'mobile', label: 'Mobile' },
+    {
+      id: 'rate',
+      label: 'Customer Rate',
+      align: 'right',
+      format: (row) => formatCurrency(Number(row.rate) || 0),
+    },
     { id: 'city', label: 'City' },
     {
       id: 'actions',

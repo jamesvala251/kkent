@@ -59,7 +59,8 @@ class TripRepository extends BaseRepository
             ->selectRaw('
                 COALESCE(SUM(total_freight), 0) as total_amount,
                 COALESCE(SUM(total_expense), 0) as total_expense,
-                COALESCE(SUM(profit), 0) as total_profit
+                COALESCE(SUM(profit), 0) as total_profit,
+                COALESCE(SUM(weight), 0) as total_weight
             ')
             ->first();
 
@@ -67,6 +68,7 @@ class TripRepository extends BaseRepository
             'total_amount' => round((float) ($row->total_amount ?? 0), 2),
             'total_expense' => round((float) ($row->total_expense ?? 0), 2),
             'total_profit' => round((float) ($row->total_profit ?? 0), 2),
+            'total_weight' => round((float) ($row->total_weight ?? 0), 2),
         ];
     }
 }

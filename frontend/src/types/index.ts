@@ -25,6 +25,7 @@ export interface Customer {
   state?: string;
   pincode?: string;
   credit_limit?: number;
+  rate?: number;
   payment_terms?: string;
   status: string;
 }

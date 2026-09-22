@@ -19,7 +19,7 @@ class StoreTripRequest extends FormRequest
             'driver_id' => 'required|exists:drivers,id',
             'hitachi_id' => 'nullable|exists:hitachi_machines,id',
             'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'end_date' => 'nullable|date',
             'from_location' => 'nullable|string|max:255',
             'to_location' => 'nullable|string|max:255',
             'material' => 'nullable|string|max:255',

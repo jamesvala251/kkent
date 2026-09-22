@@ -57,8 +57,7 @@ const schema = yup.object({
     .transform((_value, originalValue) => toNumber(originalValue))
     .optional()
     .nullable(),
-  start_date: yup.string().required('Start date is required'),
-  end_date: yup.string(),
+  start_date: yup.string().required('Trip date is required'),
   from_location: yup.string().default(''),
   to_location: yup.string().default(''),
   material: yup.string(),
@@ -86,7 +85,6 @@ interface TripFormData {
   driver_id: number;
   hitachi_id?: number;
   start_date: string;
-  end_date?: string;
   from_location: string;
   to_location: string;
   material?: string;
@@ -124,13 +122,6 @@ const calcTotalExpense = (
 
 const calcTotalFreight = (rate?: number | null, weight?: number | null) =>
   (Number(rate) || 0) * (Number(weight) || 0);
-
-const calcTripDays = (start?: string | null, end?: string | null) => {
-  if (!start) return 1;
-  const startDate = dayjs(start);
-  const endDate = end ? dayjs(end) : startDate;
-  return Math.max(1, endDate.diff(startDate, 'day') + 1);
-};
 
 export default function TripForm() {
   const { id } = useParams();
@@ -197,9 +188,7 @@ export default function TripForm() {
     const advance = Number(watched.advance_received) || 0;
     const balance = total_freight - advance;
     const profit = total_freight - total_expense;
-    const trip_days = calcTripDays(watched.start_date, watched.end_date);
-    const per_day_profit = profit / trip_days;
-    return { total_km, diesel_amount, total_expense, total_freight, balance, profit, trip_days, per_day_profit };
+    return { total_km, diesel_amount, total_expense, total_freight, balance, profit };
   }, [watched]);
 
   useEffect(() => {
@@ -239,7 +228,6 @@ export default function TripForm() {
             driver_id: data.driver_id,
             hitachi_id: data.hitachi_id ?? undefined,
             start_date: data.start_date?.split('T')[0] ?? '',
-            end_date: data.end_date?.split('T')[0] ?? '',
             from_location: data.from_location ?? '',
             to_location: data.to_location ?? '',
             material: data.material ?? '',
@@ -285,7 +273,7 @@ export default function TripForm() {
     const payload: Partial<Trip> = {
       ...data,
       hitachi_id: data.hitachi_id ?? undefined,
-      end_date: data.end_date || undefined,
+      end_date: null,
     };
     try {
       if (isEdit && id) {
@@ -344,7 +332,7 @@ export default function TripForm() {
                 Trip Details
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     label="Trip Number"
                     value={autoTripNumber}
@@ -357,19 +345,16 @@ export default function TripForm() {
                     helperText={isEdit || isView ? 'Trip number cannot be changed' : 'Auto-generated on save'}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     {...register('start_date')}
-                    label="Start Date"
+                    label="Trip Date"
                     type="date"
                     fullWidth
                     slotProps={{ inputLabel: { shrink: true } }}
                     error={!!errors.start_date}
                     helperText={errors.start_date?.message}
                   />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('end_date')} label="End Date" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
@@ -625,13 +610,12 @@ export default function TripForm() {
               <SummaryRow label="Total KM" value={`${calculations.total_km}`} />
               <SummaryRow label="Total Expenses" value={formatCurrency(calculations.total_expense)} />
               <SummaryRow label="Total Profit" value={formatCurrency(calculations.profit)} highlight />
-              <SummaryRow label="Per Day Profit" value={formatCurrency(calculations.per_day_profit)} />
               <Divider sx={{ my: 1.5 }} />
               <SummaryRow label="Total Freight" value={formatCurrency(calculations.total_freight)} />
               <SummaryRow label="Advance Received" value={formatCurrency(Number(watched.advance_received) || 0)} />
               <SummaryRow label="Balance" value={formatCurrency(calculations.balance)} />
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                {calculations.trip_days} day{calculations.trip_days !== 1 ? 's' : ''} ({watched.start_date}{watched.end_date ? ` → ${watched.end_date}` : ''})
+                Trip date: {watched.start_date || '—'}
               </Typography>
 
               {!isView && (

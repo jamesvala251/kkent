@@ -334,7 +334,7 @@ class LocalSampleDataSeeder extends Seeder
                     'truck_id' => $truck->id,
                     'driver_id' => $driver->id,
                     'start_date' => now()->subDays($def['days_ago'])->toDateString(),
-                    'end_date' => now()->subDays(max(0, $def['days_ago'] - 1))->toDateString(),
+                    'end_date' => null,
                     'from_location' => $def['from'],
                     'to_location' => $def['to'],
                     'material' => $def['material'],

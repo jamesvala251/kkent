@@ -20,12 +20,14 @@ type TripSummary = {
   total_amount: number;
   total_expense: number;
   total_profit: number;
+  total_weight: number;
 };
 
 const emptySummary: TripSummary = {
   total_amount: 0,
   total_expense: 0,
   total_profit: 0,
+  total_weight: 0,
 };
 
 const initialFilters: FilterValues = {
@@ -73,6 +75,7 @@ export default function TripList() {
         total_amount: Number(apiSummary?.total_amount ?? list.reduce((sum, row) => sum + Number(row.total_freight || 0), 0)),
         total_expense: Number(apiSummary?.total_expense ?? list.reduce((sum, row) => sum + Number(row.total_expense || 0), 0)),
         total_profit: Number(apiSummary?.total_profit ?? list.reduce((sum, row) => sum + Number(row.profit || 0), 0)),
+        total_weight: Number(apiSummary?.total_weight ?? list.reduce((sum, row) => sum + Number(row.weight || 0), 0)),
       });
     } catch {
       setRows([]);
@@ -109,6 +112,12 @@ export default function TripList() {
     { id: 'customer', label: 'Customer', format: (r) => r.customer?.name ?? '-' },
     { id: 'truck', label: 'Truck', format: (r) => r.truck?.truck_number ?? '-' },
     { id: 'total_km', label: 'KM', align: 'right' },
+    {
+      id: 'weight',
+      label: 'Ton',
+      align: 'right',
+      format: (r) => (r.weight != null ? Number(r.weight).toLocaleString('en-IN') : '-'),
+    },
     { id: 'total_freight', label: 'Total Amount', align: 'right', format: (r) => formatCurrency(r.total_freight || 0) },
     { id: 'total_expense', label: 'Expense', align: 'right', format: (r) => formatCurrency(r.total_expense || 0) },
     { id: 'profit', label: 'Profit', align: 'right', format: (r) => formatCurrency(r.profit || 0) },
@@ -241,6 +250,7 @@ export default function TripList() {
         onRowClick={(r) => navigate(`/trips/${r.id}`)}
         footer={{
           trip_number: 'Total',
+          weight: Number(summary.total_weight).toLocaleString('en-IN'),
           total_freight: formatCurrency(summary.total_amount),
           total_expense: formatCurrency(summary.total_expense),
           profit: formatCurrency(summary.total_profit),
@@ -261,6 +271,9 @@ export default function TripList() {
           borderRadius: 1,
         }}
       >
+        <Typography variant="subtitle1" fontWeight={700}>
+          Total Ton: {Number(summary.total_weight).toLocaleString('en-IN')}
+        </Typography>
         <Typography variant="subtitle1" fontWeight={700}>
           Total Amount: {formatCurrency(summary.total_amount)}
         </Typography>

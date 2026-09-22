@@ -23,6 +23,7 @@ class CustomerResource extends JsonResource
             'state' => $this->state,
             'pincode' => $this->pincode,
             'credit_limit' => $this->credit_limit,
+            'rate' => $this->rate,
             'payment_terms' => $this->payment_terms,
             'status' => $this->status,
             'created_at' => $this->created_at,

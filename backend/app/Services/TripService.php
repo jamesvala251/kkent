@@ -66,6 +66,9 @@ class TripService
         $data['from_location'] = trim((string) ($data['from_location'] ?? ''));
         $data['to_location'] = trim((string) ($data['to_location'] ?? ''));
 
+        // Trip entry uses a single date (start_date). Clear end_date if sent.
+        $data['end_date'] = null;
+
         $startKm = (float) ($data['start_km'] ?? 0);
         $endKm = (float) ($data['end_km'] ?? 0);
         $data['total_km'] = max(0, $endKm - $startKm);

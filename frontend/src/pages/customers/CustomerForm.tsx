@@ -21,13 +21,13 @@ const schema = yup.object({
   gst_number: yup.string(),
   contact_person: yup.string(),
   mobile: yup.string().required('Mobile is required'),
-  alternate_mobile: yup.string(),
   email: yup.string().email('Invalid email'),
   address: yup.string(),
   city: yup.string(),
   state: yup.string(),
   pincode: yup.string(),
   credit_limit: yup.number().transform((v) => (Number.isNaN(v) ? undefined : v)).optional(),
+  rate: yup.number().transform((v) => (Number.isNaN(v) ? undefined : v)).optional(),
   payment_terms: yup.string(),
   status: yup.string().required(),
 });
@@ -38,13 +38,13 @@ interface CustomerFormData {
   gst_number?: string;
   contact_person?: string;
   mobile: string;
-  alternate_mobile?: string;
   email?: string;
   address?: string;
   city?: string;
   state?: string;
   pincode?: string;
   credit_limit?: number;
+  rate?: number;
   payment_terms?: string;
   status: string;
 }
@@ -63,7 +63,7 @@ export default function CustomerForm() {
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormData>({
     resolver: yupResolver(schema) as Resolver<CustomerFormData>,
-    defaultValues: { status: 'active', credit_limit: 0 },
+    defaultValues: { status: 'active', credit_limit: 0, rate: 0 },
   });
 
   useEffect(() => {
@@ -77,13 +77,13 @@ export default function CustomerForm() {
             gst_number: data.gst_number ?? '',
             contact_person: data.contact_person ?? '',
             mobile: data.mobile ?? '',
-            alternate_mobile: data.alternate_mobile ?? '',
             email: data.email ?? '',
             address: data.address ?? '',
             city: data.city ?? '',
             state: data.state ?? '',
             pincode: data.pincode ?? '',
             credit_limit: data.credit_limit != null ? Number(data.credit_limit) : 0,
+            rate: data.rate != null ? Number(data.rate) : 0,
             payment_terms: data.payment_terms ?? '',
             status: data.status ?? 'active',
           });
@@ -151,10 +151,10 @@ export default function CustomerForm() {
                 <TextField {...register('mobile')} label="Mobile" fullWidth margin="normal" error={!!errors.mobile} helperText={errors.mobile?.message} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField {...register('alternate_mobile')} label="Alternate Mobile" fullWidth margin="normal" />
+                <TextField {...register('email')} label="Email" fullWidth margin="normal" error={!!errors.email} helperText={errors.email?.message} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField {...register('email')} label="Email" fullWidth margin="normal" error={!!errors.email} helperText={errors.email?.message} />
+                <TextField {...register('rate')} label="Customer Rate" type="number" fullWidth margin="normal" />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField {...register('credit_limit')} label="Credit Limit" type="number" fullWidth margin="normal" />

@@ -98,7 +98,7 @@ class ReportService
 
         $rows = $trips->map(fn ($t) => [
             'trip_number' => $t->trip_number,
-            'end_date' => $t->end_date?->format('Y-m-d'),
+            'start_date' => $t->start_date?->format('Y-m-d'),
             'total_freight' => (float) $t->total_freight,
             'total_expense' => (float) $t->total_expense,
             'profit' => (float) $t->profit,
@@ -116,7 +116,7 @@ class ReportService
             ],
             'columns' => [
                 ['key' => 'trip_number', 'label' => 'Trip #'],
-                ['key' => 'end_date', 'label' => 'End Date'],
+                ['key' => 'start_date', 'label' => 'Date'],
                 ['key' => 'total_freight', 'label' => 'Freight', 'format' => 'currency'],
                 ['key' => 'total_expense', 'label' => 'Expense', 'format' => 'currency'],
                 ['key' => 'profit', 'label' => 'Profit', 'format' => 'currency'],

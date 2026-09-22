@@ -223,6 +223,7 @@ class CustomerItem {
     this.mobile,
     this.city,
     this.email,
+    this.rate,
     this.status,
   });
 
@@ -232,6 +233,7 @@ class CustomerItem {
   final String? mobile;
   final String? city;
   final String? email;
+  final double? rate;
   final String? status;
 
   factory CustomerItem.fromJson(dynamic json) {
@@ -243,6 +245,7 @@ class CustomerItem {
       mobile: map['mobile']?.toString(),
       city: map['city']?.toString(),
       email: map['email']?.toString(),
+      rate: asNum(map['rate'])?.toDouble(),
       status: map['status']?.toString(),
     );
   }

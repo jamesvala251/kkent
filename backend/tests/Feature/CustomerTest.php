@@ -32,10 +32,12 @@ class CustomerTest extends TestCase
         $response = $this->postJson('/api/customers', [
             'name' => 'Test Customer',
             'mobile' => '9999999999',
+            'rate' => 1500,
             'status' => 'active',
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.name', 'Test Customer');
+            ->assertJsonPath('data.name', 'Test Customer')
+            ->assertJsonPath('data.rate', '1500.00');
     }
 }

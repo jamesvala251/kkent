@@ -116,7 +116,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                           subtitle: Text(
-                            [row.companyName, row.mobile, row.city]
+                            [
+                                  row.companyName,
+                                  row.mobile,
+                                  if (row.rate != null && row.rate! > 0)
+                                    money(row.rate),
+                                  row.city,
+                                ]
                                 .where((v) => v != null && v.isNotEmpty)
                                 .join('  ·  '),
                           ),

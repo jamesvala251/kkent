@@ -23,12 +23,7 @@ class DashboardService
         $monthEnd = Carbon::now()->endOfMonth();
 
         $tripIncome = Trip::query()
-            ->where(function ($query) use ($monthStart, $monthEnd) {
-                $query->whereBetween('end_date', [$monthStart, $monthEnd])
-                    ->orWhere(function ($inner) use ($monthStart, $monthEnd) {
-                        $inner->whereNull('end_date')->whereBetween('start_date', [$monthStart, $monthEnd]);
-                    });
-            })
+            ->whereBetween('start_date', [$monthStart, $monthEnd])
             ->sum('total_freight');
 
         $rentalIncome = HitachiRental::where('status', 'completed')
@@ -64,8 +59,8 @@ class DashboardService
             return [
                 'month' => $date->format('M Y'),
                 'amount' => Trip::query()
-                    ->whereYear('end_date', $date->year)
-                    ->whereMonth('end_date', $date->month)
+                    ->whereYear('start_date', $date->year)
+                    ->whereMonth('start_date', $date->month)
                     ->sum('total_freight'),
             ];
         });
@@ -107,17 +102,17 @@ class DashboardService
         });
 
         $vehicleIncome = Truck::withSum(['trips as income' => function ($q) {
-            $q->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+            $q->whereBetween('start_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
         }], 'total_freight')
             ->limit(10)
             ->get()
             ->map(fn ($t) => ['vehicle' => $t->truck_number, 'income' => $t->income ?? 0]);
 
         $driverPerformance = Driver::withCount(['trips as completed_trips' => function ($q) {
-            $q->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+            $q->whereBetween('start_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
         }])
             ->withSum(['trips as total_freight' => function ($q) {
-                $q->whereBetween('end_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                $q->whereBetween('start_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
             }], 'total_freight')
             ->where('status', 'active')
             ->limit(10)

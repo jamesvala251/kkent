@@ -26,6 +26,7 @@ class StoreCustomerRequest extends FormRequest
             'state' => 'nullable|string|max:100',
             'pincode' => 'nullable|string|max:10',
             'credit_limit' => 'nullable|numeric|min:0',
+            'rate' => 'nullable|numeric|min:0',
             'payment_terms' => 'nullable|string|max:255',
             'status' => 'nullable|in:active,inactive',
         ];
