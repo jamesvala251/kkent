@@ -261,6 +261,10 @@ export default function TripForm() {
       ...data,
       hitachi_id: data.hitachi_id ?? undefined,
       end_date: null,
+      from_location: '',
+      to_location: '',
+      start_km: Number(data.start_km) || 0,
+      end_km: Number(data.end_km) || 0,
     };
     try {
       if (isEdit && id) {
