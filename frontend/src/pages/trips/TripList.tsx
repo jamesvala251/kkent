@@ -106,12 +106,9 @@ export default function TripList() {
 
   const columns: Column<Trip>[] = [
     { id: 'trip_number', label: 'Trip #', minWidth: 130 },
-    { id: 'from_location', label: 'From' },
-    { id: 'to_location', label: 'To' },
     { id: 'start_date', label: 'Date', format: (r) => formatDate(r.start_date) },
     { id: 'customer', label: 'Customer', format: (r) => r.customer?.name ?? '-' },
     { id: 'truck', label: 'Truck', format: (r) => r.truck?.truck_number ?? '-' },
-    { id: 'total_km', label: 'KM', align: 'right' },
     {
       id: 'weight',
       label: 'Ton',

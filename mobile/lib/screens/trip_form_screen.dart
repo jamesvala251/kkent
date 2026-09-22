@@ -146,7 +146,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
 
   Future<void> _save() async {
     final l = AppLocalizations.of(context);
-    final startKm = _num(_startKm) ?? 0;
     if (_customerId == null || _truckId == null || _driverId == null) {
       ScaffoldMessenger.of(
         context,
@@ -161,12 +160,12 @@ class _TripFormScreenState extends State<TripFormScreen> {
       if (_hitachiId != null) 'hitachi_id': _hitachiId,
       'start_date': _startDate,
       'end_date': null,
-      'from_location': _from.text.trim(),
-      'to_location': _to.text.trim(),
+      'from_location': '',
+      'to_location': '',
       'material': _material.text.trim(),
       'weight': _num(_weight) ?? 0,
-      'start_km': startKm,
-      'end_km': _num(_endKm) ?? 0,
+      'start_km': 0,
+      'end_km': 0,
       'diesel_qty': _num(_dieselQty) ?? 0,
       'diesel_rate': _num(_dieselRate) ?? 0,
       'toll': _num(_toll) ?? 0,
@@ -266,16 +265,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
                 ),
                 const FormGap(),
                 TextField(
-                  controller: _from,
-                  decoration: InputDecoration(labelText: l.from),
-                ),
-                const FormGap(),
-                TextField(
-                  controller: _to,
-                  decoration: InputDecoration(labelText: l.to),
-                ),
-                const FormGap(),
-                TextField(
                   controller: _material,
                   decoration: InputDecoration(labelText: l.material),
                 ),
@@ -286,22 +275,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
                     decimal: true,
                   ),
                   decoration: InputDecoration(labelText: l.weight),
-                ),
-                const FormGap(),
-                TextField(
-                  controller: _startKm,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(labelText: l.startKm),
-                ),
-                const FormGap(),
-                TextField(
-                  controller: _endKm,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(labelText: l.endKm),
                 ),
                 const FormGap(),
                 TextField(

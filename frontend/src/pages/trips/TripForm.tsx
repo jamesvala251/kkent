@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
-  Autocomplete,
   Box,
   Button,
   Card,
@@ -18,7 +17,7 @@ import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useForm, useWatch, Controller, type FieldErrors, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type FieldErrors, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import dayjs from 'dayjs';
@@ -27,7 +26,6 @@ import PageHeader from '../../components/common/PageHeader';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
 import { createItem, fetchList, fetchOne, formatCurrency, updateItem } from '../../services/resourceService';
 import api from '../../services/api';
-import { GUJARAT_CITIES, withCustomCity } from '../../data/gujaratCities';
 import type { Customer, Driver, HitachiMachine, Trip, Truck } from '../../types';
 
 const toNumber = (value: unknown, fallback?: number) => {
@@ -62,10 +60,7 @@ const schema = yup.object({
   to_location: yup.string().default(''),
   material: yup.string(),
   weight: optionalNumber(),
-  start_km: yup
-    .number()
-    .transform((_value, originalValue) => toNumber(originalValue, 0))
-    .required('Start KM is required'),
+  start_km: optionalNumber(),
   end_km: optionalNumber(),
   diesel_qty: optionalNumber(),
   diesel_rate: optionalNumber(),
@@ -159,14 +154,6 @@ export default function TripForm() {
   });
 
   const watched = useWatch({ control });
-  const fromCityOptions = useMemo(
-    () => withCustomCity(GUJARAT_CITIES, watched.from_location),
-    [watched.from_location],
-  );
-  const toCityOptions = useMemo(
-    () => withCustomCity(GUJARAT_CITIES, watched.to_location),
-    [watched.to_location],
-  );
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -418,78 +405,6 @@ export default function TripForm() {
                     ))}
                   </TextField>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Controller
-                    name="from_location"
-                    control={control}
-                    render={({ field }) => (
-                      <Autocomplete
-                        disabled={isView}
-                        freeSolo
-                        autoSelect
-                        options={fromCityOptions}
-                        value={field.value ?? ''}
-                        onChange={(_, value, reason) => {
-                          if (reason === 'clear') {
-                            field.onChange('');
-                            return;
-                          }
-                          if (typeof value === 'string') field.onChange(value);
-                        }}
-                        onInputChange={(_, value, reason) => {
-                          if (reason === 'input' || reason === 'clear') {
-                            field.onChange(value);
-                          }
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="From Location (Optional)"
-                            margin="normal"
-                            error={!!errors.from_location}
-                            helperText={errors.from_location?.message || 'Optional — type any location or pick from the list'}
-                          />
-                        )}
-                      />
-                    )}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Controller
-                    name="to_location"
-                    control={control}
-                    render={({ field }) => (
-                      <Autocomplete
-                        disabled={isView}
-                        freeSolo
-                        autoSelect
-                        options={toCityOptions}
-                        value={field.value ?? ''}
-                        onChange={(_, value, reason) => {
-                          if (reason === 'clear') {
-                            field.onChange('');
-                            return;
-                          }
-                          if (typeof value === 'string') field.onChange(value);
-                        }}
-                        onInputChange={(_, value, reason) => {
-                          if (reason === 'input' || reason === 'clear') {
-                            field.onChange(value);
-                          }
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="To Location (Optional)"
-                            margin="normal"
-                            error={!!errors.to_location}
-                            helperText={errors.to_location?.message || 'Optional — type any location or pick from the list'}
-                          />
-                        )}
-                      />
-                    )}
-                  />
-                </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <TextField {...register('material')} label="Material" fullWidth />
                 </Grid>
@@ -507,25 +422,9 @@ export default function TripForm() {
           <Card sx={{ mb: 2.5 }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }} gutterBottom>
-                KM & Diesel
+                Diesel
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    {...register('start_km')}
-                    label="Start KM"
-                    type="number"
-                    fullWidth
-                    error={!!errors.start_km}
-                    helperText={errors.start_km?.message}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField {...register('end_km')} label="End KM" type="number" fullWidth />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField label="Total KM" value={calculations.total_km} fullWidth slotProps={{ input: { readOnly: true } }} />
-                </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
                     {...register('diesel_qty')}
@@ -623,7 +522,6 @@ export default function TripForm() {
                 Forward Trip Summary
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <SummaryRow label="Total KM" value={`${calculations.total_km}`} />
               <SummaryRow label="Total Expenses" value={formatCurrency(calculations.total_expense)} />
               <SummaryRow label="Total Profit" value={formatCurrency(calculations.profit)} highlight />
               <Divider sx={{ my: 1.5 }} />

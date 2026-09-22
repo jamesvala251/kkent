@@ -24,7 +24,7 @@ class StoreTripRequest extends FormRequest
             'to_location' => 'nullable|string|max:255',
             'material' => 'nullable|string|max:255',
             'weight' => 'nullable|numeric|min:0',
-            'start_km' => 'required|numeric|min:0',
+            'start_km' => 'nullable|numeric|min:0',
             'end_km' => 'nullable|numeric|min:0',
             'diesel_qty' => 'nullable|numeric|min:0',
             'diesel_rate' => 'nullable|numeric|min:0',

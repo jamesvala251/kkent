@@ -122,13 +122,6 @@ class _TripsScreenState extends State<TripsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '${trip.fromLocation ?? '—'}  →  ${trip.toLocation ?? '—'}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
                               [
                                     trip.customerName,
                                     formatDate(trip.startDate),
@@ -386,8 +379,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               title: l.route,
               children: [
                 Kv(l.date, formatDate(trip.startDate)),
-                Kv(l.from, trip.fromLocation),
-                Kv(l.to, trip.toLocation),
                 Kv(l.customer, trip.customerName),
                 Kv(l.truck, trip.truckNumber),
                 Kv(l.driver, trip.driverName),
@@ -402,7 +393,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   l.weight,
                   trip.weight == null ? null : l.weightTons('${trip.weight}'),
                 ),
-                Kv(l.km, trip.totalKm?.toString()),
                 Kv(l.remarks, trip.remarks),
               ],
             ),
