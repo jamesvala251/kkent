@@ -103,6 +103,22 @@ export default function InvoiceList() {
     { id: 'due_date', label: 'Due Date', format: (r) => formatDate(r.due_date || '') },
     { id: 'subtotal', label: 'Subtotal', align: 'right', format: (r) => formatCurrency(Number(r.subtotal)) },
     { id: 'total_amount', label: 'Total', align: 'right', format: (r) => formatCurrency(Number(r.total_amount)) },
+    {
+      id: 'paid_amount',
+      label: 'Paid',
+      align: 'right',
+      format: (r) => (r.payment_status === 'partial' ? formatCurrency(Number(r.paid_amount || 0)) : '—'),
+    },
+    {
+      id: 'remaining',
+      label: 'Remaining',
+      align: 'right',
+      format: (r) => {
+        if (r.payment_status !== 'partial') return '—';
+        const remaining = Number(r.total_amount) - Number(r.paid_amount || 0);
+        return formatCurrency(Math.max(0, remaining));
+      },
+    },
     { id: 'payment_status', label: 'Payment', format: (r) => r.payment_status },
     {
       id: 'actions',

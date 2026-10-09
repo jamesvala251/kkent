@@ -132,7 +132,7 @@ export interface Trip {
   driver_id: number;
   hitachi_id?: number;
   start_date: string;
-  end_date?: string;
+  end_date?: string | null;
   from_location: string;
   to_location: string;
   material?: string;

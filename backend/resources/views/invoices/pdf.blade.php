@@ -170,6 +170,8 @@
         $sgstAmount = round($subtotal * $sgstRate / 100, 2);
         $igstAmount = round($subtotal * $igstRate / 100, 2);
         $grandTotal = round($subtotal + $cgstAmount + $sgstAmount + $igstAmount, 2);
+        $paidAmount = round((float) $invoice->paid_amount, 2);
+        $remainingAmount = round(max(0, $grandTotal - $paidAmount), 2);
     @endphp
     <div class="totals">
         <table>
@@ -184,6 +186,10 @@
             <tr><td>IGST @ {{ number_format($igstRate, 2) }}%</td><td>₹{{ number_format($igstAmount, 2) }}</td></tr>
             @endif
             <tr><td><strong>Total</strong></td><td><strong>₹{{ number_format($grandTotal, 2) }}</strong></td></tr>
+            @if($invoice->payment_status === 'partial')
+            <tr><td>Amount Paid</td><td>₹{{ number_format($paidAmount, 2) }}</td></tr>
+            <tr><td><strong>Balance Due</strong></td><td><strong>₹{{ number_format($remainingAmount, 2) }}</strong></td></tr>
+            @endif
         </table>
     </div>
 
