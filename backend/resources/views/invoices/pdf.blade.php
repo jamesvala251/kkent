@@ -172,9 +172,20 @@
         $grandTotal = round($subtotal + $cgstAmount + $sgstAmount + $igstAmount, 2);
         $paidAmount = round((float) $invoice->paid_amount, 2);
         $remainingAmount = round(max(0, $grandTotal - $paidAmount), 2);
+
+        $totalTon = 0;
+
+if ($invoice->trips && $invoice->trips->count()) {
+    $totalTon = $invoice->trips->sum(function ($trip) {
+        return (float) ($trip->weight ?? 0);
+    });
+} elseif ($invoice->trip) {
+    $totalTon = (float) ($invoice->trip->weight ?? 0);
+}
     @endphp
     <div class="totals">
         <table>
+            <tr><td>Total Ton</td><td>{{ number_format($totalTon, 2) }}</td></tr>
             <tr><td>Subtotal</td><td>₹{{ number_format($subtotal, 2) }}</td></tr>
             @if($cgstRate > 0)
             <tr><td>CGST @ {{ number_format($cgstRate, 2) }}%</td><td>₹{{ number_format($cgstAmount, 2) }}</td></tr>
